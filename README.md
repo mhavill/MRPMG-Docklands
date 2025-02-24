@@ -22,7 +22,6 @@ ESP32-WROVER
 
 ![ESP32](Documentation/ESP32-Wrover.png)
 
-<<<<<<< HEAD
 [ESP#@-WROVER from Lonely Binary](https://lonelybinary.com/collections/esp32/products/lonely-binary-esp32-wrover-the-king-of-esp32)
 
 ## Projects
@@ -37,6 +36,3 @@ We will provide some links to support, tutorials, descriptions of the platform c
 You will have to choose between cloud based development environment, PC based environments or physically loaded platform based
 
 ### 2. Seeing it starting to do stuff
-=======
-[ESP32-WROVER from Lonely Binary](https://lonelybinary.com/collections/esp32/products/lonely-binary-esp32-wrover-the-king-of-esp32)
->>>>>>> 4c05f17f4b58e43bae1ed433c3c5a72d9cdcdff2
