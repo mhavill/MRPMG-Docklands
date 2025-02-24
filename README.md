@@ -22,4 +22,4 @@ ESP32-WROVER
 
 ![ESP32](Documentation/ESP32-Wrover.png)
 
-[ESP#@-WROVER from Lonely Binary](https://lonelybinary.com/collections/esp32/products/lonely-binary-esp32-wrover-the-king-of-esp32)
+[ESP32-WROVER from Lonely Binary](https://lonelybinary.com/collections/esp32/products/lonely-binary-esp32-wrover-the-king-of-esp32)
