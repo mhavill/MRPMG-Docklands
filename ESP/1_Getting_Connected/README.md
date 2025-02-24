@@ -10,6 +10,7 @@ You will have to choose between cloud based development environment, PC based en
 Arduino Cloud or Local?
 ![ArduinoIDE](Documentation\ArduinoIDE.png)
 [](https://www.arduino.cc/en/software)
+[Cloud requires a locally installed 'Cloud Agent'](https://cloud.arduino.cc/download-agent)
 
 Esspressif 
 [Esspressif Web IDE](https://developer.espressif.com/blog/accelerate-your-iot-development-with-the-espressif-webide/)
