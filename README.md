@@ -6,9 +6,9 @@ A repo of sample projects for Rpi and ESP32
 
 In the coming sessions we will encourage our members to extend there knowledge by sharing and experiencing new aspects of all things microcontroller and computer.
 
-We will start with some 'simple' projects to get used to working on a new platform/environment
+We will start with some 'simple' projects to get used to working on a new platform/environment.
 
-Please feel free to clone this and fork it for your own purposes
+Please feel free to clone this and fork it for your own purposes.
 
 ## Platforms
 
@@ -26,16 +26,19 @@ ESP32-WROVER
 
 ## Projects
 
-For each of the following projects the details for the specific Platform are different.  You will find the details in the RPi folder or the ESP folder
+For each of the following projects the details for the specific Platform are different.  You will find the details in the [RPi folder](RPi) or the [ESP folder](ESP)
 
 ### 1. Getting Connected
 
-In this project we go from getting a bare board as delivered from a supplier to having the booard up and running connected to your PC where you can create programs and load them on to your platform.
+In this project we go from getting a bare board as delivered from a supplier to having the board up and running connected to your PC where you can create programs and load them on to your chosen platform.
 We will provide some links to support, tutorials, descriptions of the platform capabilities.
+
 **IDE's** - Integrated Development Environments
-You will have to choose between cloud based development environment, PC based environments or physically loaded platform based
+You will have to choose between cloud based development environment, PC based environments or physically loaded platform based.
+
 **Languages**
-A variety of programming languages are supported on the devices.  WHat are you familiar with?
+A variety of programming languages are supported on the devices.  What are you familiar with?
+
 **Physical connection**
 USB is common but are you connecting to Windows, Mac or Linux
 Do you have the correct driver?
