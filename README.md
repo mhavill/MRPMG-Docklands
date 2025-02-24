@@ -23,3 +23,16 @@ ESP32-WROVER
 ![ESP32](Documentation\ESP32-Wrover.png)
 
 [ESP#@-WROVER from Lonely Binary](https://lonelybinary.com/collections/esp32/products/lonely-binary-esp32-wrover-the-king-of-esp32)
+
+## Projects
+
+For each of the following projects the details for the specific Platform are different.  You will find the details in the RPi folder or the ESP folder
+
+### 1. Getting Connected
+
+In this project we go from getting a bare board as delivered from a supplier to having the booard up and running connected to your PC where you can create programs and load them on to your platform.
+We will provide some links to support, tutorials, descriptions of the platform capabilities.
+**IDE's** - Integrated Development Environments
+You will have to choose between cloud based development environment, PC based environments or physically loaded platform based
+
+### 2. Seeing it starting to do stuff
