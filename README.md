@@ -22,7 +22,7 @@ ESP32-WROVER
 
 ![ESP32](Documentation/ESP32-Wrover.png)
 
-[ESP#@-WROVER from Lonely Binary](https://lonelybinary.com/collections/esp32/products/lonely-binary-esp32-wrover-the-king-of-esp32)
+[ESP32-WROVER from Lonely Binary](https://lonelybinary.com/collections/esp32/products/lonely-binary-esp32-wrover-the-king-of-esp32)
 
 ## Projects
 
@@ -34,5 +34,10 @@ In this project we go from getting a bare board as delivered from a supplier to 
 We will provide some links to support, tutorials, descriptions of the platform capabilities.
 **IDE's** - Integrated Development Environments
 You will have to choose between cloud based development environment, PC based environments or physically loaded platform based
+**Languages**
+A variety of programming languages are supported on the devices.  WHat are you familiar with?
+**Physical connection**
+USB is common but are you connecting to Windows, Mac or Linux
+Do you have the correct driver?
 
 ### 2. Seeing it starting to do stuff
