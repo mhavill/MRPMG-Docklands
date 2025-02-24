@@ -11,6 +11,10 @@ Arduino Cloud or Local?
 ![ArduinoIDE](Documentation\ArduinoIDE.png)
 [](https://www.arduino.cc/en/software)
 
+Esspressif 
+[Esspressif Web IDE](https://developer.espressif.com/blog/accelerate-your-iot-development-with-the-espressif-webide/)
+I have not tried this but if you wade through the video you will see that it enables you to develop with the power of the web for speed and operate locally in your desktop environment.  I can see that it would significantly speed up compiling and improve debugging
+
 /TODO Add more
 
 **Languages**
