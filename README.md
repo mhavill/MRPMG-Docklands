@@ -16,7 +16,7 @@ Raspberry Pi Zero W V1 (RPi)
 
 ![RPi Zero](Documentation/RPi-ZERO-1.png)
 
-[RPi Zero Version 1.3 from Mouser](https://au.mouser.com/ProductDetail/Raspberry-Pi/SC0019?qs=rQFj71Wb1eUTUmywZo0nqA%3D%3D&mgh=1&vip=1&srsltid=AfmBOopNBpkS3Wu4sUSBqWcSk4nPya8Yd-0MRyvC9qcC8A8VxcX6byH2DrY)
+[RPi Zero Version 1.3](https://www.raspberrypi.com/products/raspberry-pi-zero-w/)
 
 ESP32-WROVER
 
