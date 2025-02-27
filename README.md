@@ -1,6 +1,6 @@
 # MRPMG-Docklands
 
-A repo of sample projects for Rpi and ESP32
+A repo of sample projects for RPi and ESP32 to be used at our meetups
 
 ## Introduction
 
@@ -12,7 +12,7 @@ Please feel free to clone this and fork it for your own purposes.
 
 ## Platforms
 
-RPi Zero one
+Raspberry Pi Zero W V1 (RPi)
 
 ![RPi Zero](Documentation/RPi-ZERO-1.png)
 
