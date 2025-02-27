@@ -1,6 +1,6 @@
 # MRPMG-Docklands
 
-A repo of sample projects for RPi and ESP32 to be used at our meetups
+A repository of sample projects for Raspberry Pi and ESP32 to be used at our meetups
 
 ## Introduction
 
@@ -44,3 +44,5 @@ USB is common but are you connecting to Windows, Mac or Linux
 Do you have the correct driver?
 
 ### 2. Seeing it starting to do stuff
+
+You will find that both platforms have different use cases with advantages and disadvntages but we will get to understand how they are best used together. 
