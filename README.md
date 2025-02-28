@@ -4,7 +4,7 @@ A repository of sample projects for Raspberry Pi and ESP32 to be used at our mee
 
 ## Introduction
 
-In the coming sessions we will encourage our members to extend there knowledge by sharing and experiencing new aspects of all things microcontroller and computer.
+In the coming sessions we will encourage our members to extend their knowledge by sharing and experiencing new aspects of all things microcontroller and computer.
 
 We will start with some 'simple' projects to get used to working on a new platform/environment.
 
