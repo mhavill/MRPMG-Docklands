@@ -1,0 +1,23 @@
+mkdir code
+cd code
+nano hello.c
+
+enter the following in nano:
+
+```
+#include <stdio.h>
+int main() {
+printf("Hello World\n");
+return 0;
+}
+```
+cntl x to save, select yes, then press enter
+
+```gcc hello.c
+
+./a.out
+```
+    
+You should see "Hello World" on the terminal
+
+

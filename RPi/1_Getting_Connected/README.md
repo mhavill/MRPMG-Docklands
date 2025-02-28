@@ -7,5 +7,9 @@ When you connect up through the micro USB (PWR) you will see the green LED flash
 After a little while your RPi will stop flashing and it should be connected to the WiFi AP (Vanessa)
 
 Open your RealVNC viewer and set up a new connection using the IP address provided with the board.
-The user name is 'pi' and password is 'password'
+   Use IP address 192.168.0.10x (x is the pi nbr)
+   Use pi as the user ID
+   Use password as the p/w
+   Check the remember box, hit enter
+
 If you are successful you will see the Bookworm background image. **Well done!**
