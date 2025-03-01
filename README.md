@@ -19,13 +19,13 @@ Please feel free to clone this and fork it for your own purposes.
 
 Raspberry Pi Zero W V1 (RPi)
 
-![RPi Zero](Documentation/RPi-ZERO-1.png)
+![RPi Zero](/Documentation/RPi-ZERO-1.png)
 
 [RPi Zero Version 1.3](https://www.raspberrypi.com/products/raspberry-pi-zero-w/)
 
 ESP32-WROVER
 
-![ESP32](Documentation/ESP32-Wrover.png)
+![ESP32](/Documentation/ESP32-Wrover.png)
 
 [ESP32-WROVER from Lonely Binary](https://lonelybinary.com/collections/esp32/products/lonely-binary-esp32-wrover-the-king-of-esp32)
 
