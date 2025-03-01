@@ -54,4 +54,4 @@ You will find that both platforms have different use cases with advantages and d
 
 ### 3. Lets have a chat
 
-Communicating between platforms is a common feature which builds comprehensive solutions.  The comms may happen over serial, LAN, WiFI, Bluetooh etc.
+Communicating between platforms is a common feature which builds comprehensive solutions.  The comms may happen over serial, LAN, WiFI, Bluetooth etc.
