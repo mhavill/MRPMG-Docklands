@@ -1,6 +1,6 @@
 # Getting Connected to your RPi Zero
 
-![5 RPi's loaded and tested with PSU's](Documentation/5RPis.jpg)
+![5 RPi's loaded and tested with PSU's](.../Documentation/5RPis.jpg)
 
 Your RPi has been fitted with an SD which we have preloaded with Raspberry Pi 32bit Bookworm.  It has also been set up to connect to a specific WiFi and has been enabled with RealVNC server.
 
@@ -15,10 +15,10 @@ Now switch your laptop WiFi to the AP, MRPMG with password 'password'. This AP i
 
 Open your RealVNC viewer and set up a new connection using the IP address provided with the board.
    Use IP address 10.1.1.10x (x is the pi nbr)
-![A config on RealVNC viewer](Documentation/RealVNC-Config.png)
+![A config on RealVNC viewer](.../Documentation/RealVNC-Config.png)
 
    Double click you new session to launch
-   ![Select your newly configured session](Documentation/Session_definitions_on_RealVNC_viewr.png)
+   ![Select your newly configured session](.../Documentation/Session_definitions_on_RealVNC_viewr.png)
 
    Accept the certificate warning
    Use pi as the user ID

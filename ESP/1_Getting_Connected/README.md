@@ -20,7 +20,6 @@ PlatformIO (PIO)
 A step up in complexity from Arduino IDE that has much greater flexibility and capability.  As an extension of Visual Studio Code (VSCode), PIO offers proffesional quality and support is unmatched.
 [Installing PIO](https://docs.platformio.org/en/latest/integration/ide/vscode.html#quick-start)
 
-
 Thony
 If your preferred language is Python
 
