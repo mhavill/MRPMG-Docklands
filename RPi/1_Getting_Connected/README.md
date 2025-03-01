@@ -14,17 +14,23 @@ After a little while your RPi will stop flashing and it should be connected to t
 Now switch your laptop WiFi to the AP, MRPMG with password 'password'. This AP is only a local WLAN and has no Internet connection.
 
 Open your RealVNC viewer and set up a new connection using the IP address provided with the board.
-   Use IP address 10.1.1.10x (x is the pi nbr)
+
+Use IP address 10.1.1.10x (x is the pi nbr)
+
 ![A config on RealVNC viewer](/Documentation/RealVNC-Config.png)
 
-   Double click you new session to launch
-   ![Select your newly configured session](/Documentation/Session_definitions_on_RealVNC_viewr.png)
+Double click you new session to launch
 
-   Accept the certificate warning
-   Use pi as the user ID
-   Use password as the p/w
-   Check the remember box, hit enter
+![Select your newly configured session](/Documentation/Session_definitions_on_RealVNC_viewr.png)
+
+Accept the certificate warning
+
+Use pi as the user ID
+
+Use password as the p/w
+
+Check the remember box, hit enter
 
 If you are successful you will see the Bookworm background image.
 
-![Five!](/Documentation/5_active_ sessions.png)  **Well done!**
+![Five active Sessions!](/Documentation/5_active_sessions.png)  **Well done!**
