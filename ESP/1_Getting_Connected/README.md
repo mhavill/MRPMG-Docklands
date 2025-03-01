@@ -9,7 +9,9 @@ You will have to choose between cloud based development environment, PC based en
 
 Arduino Cloud or Local?
 ![Arduino IDE](/Documentation/ArduinoIDE.png)
+
 [Click to get Arduino IDE](https://www.arduino.cc/en/software)
+
 [Cloud requires a locally installed 'Cloud Agent'](https://cloud.arduino.cc/download-agent)
 
 Esspressif 
@@ -27,9 +29,11 @@ If your preferred language is Python
 
 **Languages**
 A variety of programming languages are supported on the devices.  What are you familiar with?
+
 /TODO Add more
 **Physical connection**
 USB is common but are you connecting to Windows, Mac or Linux
+
 Do you have the correct driver?
 
 /TODO Add more
