@@ -1,6 +1,11 @@
 # MRPMG-Docklands
 
-A repository of sample projects for Raspberry Pi and ESP32 to be used at our meetups
+A repository of sample projects for Raspberry Pi (RPi) and ESP32 to be used at our meetups.
+
+## Acknowledgements
+
+Thanks to Geoff, Joe and Ahmet for the discussions, loan of RPi's, SD Cards, USB cables and numerous hours in loading up the RPi's.
+Also, for being kind to me in my ignorance.
 
 ## Introduction
 
