@@ -50,8 +50,8 @@ Do you have the correct driver?
 
 ### 2. Seeing it starting to do stuff
 
-You will find that both platforms have different use cases with advantages and disadvntages but we will get to understand how they are best used together.
+You will find that both platforms have different use cases with advantages and disadvantages but we will get to understand how they are best used together.
 
 ### 3. Lets have a chat
 
-Communicating between platforms is a common feature which builds comprehensive solutions.  The comms may happen over serial, LAN, WiFI, Bluetooh etc.
+Communicating between platforms is a common feature which builds comprehensive solutions.  The comms may happen over serial, LAN, WiFI, Bluetooth etc.
