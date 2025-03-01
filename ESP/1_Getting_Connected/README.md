@@ -8,8 +8,8 @@ We will provide some links to support, tutorials, descriptions of the platform c
 You will have to choose between cloud based development environment, PC based environments or physically loaded platform based
 
 Arduino Cloud or Local?
-![ArduinoIDE](Documentation\ArduinoIDE.png)
-[](https://www.arduino.cc/en/software)
+![Arduino IDE](Documentation/ArduinoIDE.png)
+[Click to get Arduino IDE](https://www.arduino.cc/en/software)
 [Cloud requires a locally installed 'Cloud Agent'](https://cloud.arduino.cc/download-agent)
 
 Esspressif 
