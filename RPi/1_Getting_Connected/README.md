@@ -25,6 +25,6 @@ Open your RealVNC viewer and set up a new connection using the IP address provid
    Use password as the p/w
    Check the remember box, hit enter
 
-If you are successful you will see the Bookworm background image. !
-![Here are 5 active sessions!](Documentation/5_active_ sessions.png)
- **Well done!**
+If you are successful you will see the Bookworm background image.
+
+![Five!](/Documentation/5_active_ sessions.png)  **Well done!**
