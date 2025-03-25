@@ -14,8 +14,9 @@
 #include <WiFiClient.h>
 #include <WebServer.h>
 #include <ESPmDNS.h>
+#include <arduino-timer.h>
 
-#include "secrets.h"
+// #include "secrets.h"
 
 // Include the libraries we need for temperature
 #include <OneWire.h>
@@ -27,16 +28,22 @@
 void handleRoot();
 void handleNotFound();
 void setup(void);
+bool readtemp(void *);
+void handleTemp();
 
 /*******************************
  * Definitions
  *******************************/
 
-// const char* ssid = "MRPMG";
-// const char* password = "password";
+const char *ssid = "MRPMG";
+const char *password = "password";
+const int SECOND = 1000;
+static float tempC;
 
 // TODO Add Code to read temperature
 // TODO Add Code to manage LED(s)
+// TODO handle client GET
+// TODO handle client PUT
 
 WebServer server(80);
 
@@ -49,6 +56,8 @@ OneWire oneWire(ONE_WIRE_BUS);
 
 // Pass our oneWire reference to Dallas Temperature.
 DallasTemperature sensors(&oneWire);
+
+auto timer = timer_create_default(); // create a timer with default settings
 
 /*******************************
  * Setup
@@ -78,11 +87,16 @@ void setup(void)
   {
     Serial.println("MDNS responder started");
   }
+  // Start up the temperature library
+  sensors.begin();
+  timer.every(10 * SECOND, readtemp);
 
   server.on("/", handleRoot);
 
   server.on("/inline", []()
             { server.send(200, "text/plain", "this works as well"); });
+
+  server.on("/temp", handleTemp);
 
   server.onNotFound(handleNotFound);
 
@@ -97,12 +111,36 @@ void setup(void)
 void loop(void)
 {
   server.handleClient();
-  delay(2); // allow the cpu to switch to other tasks
+  // delay(2); // allow the cpu to switch to other tasks
+  timer.tick();
 }
 
 /*******************************
  * Utility Functions
  *******************************/
+bool readtemp(void *)
+{
+  // call sensors.requestTemperatures() to issue a global temperature
+  // request to all devices on the bus
+  Serial.print("Requesting temperatures...");
+  sensors.requestTemperatures(); // Send the command to get temperatures
+  Serial.println("DONE");
+  // After we got the temperatures, we can print them here.
+  // We use the function ByIndex, and as an example get the temperature from the first sensor only.
+  tempC = sensors.getTempCByIndex(0);
+
+  // Check if reading was successful
+  if (tempC != DEVICE_DISCONNECTED_C)
+  {
+    Serial.print("Temperature for the device 1 (index 0) is: ");
+    Serial.println(tempC);
+  }
+  else
+  {
+    Serial.println("Error: Could not read temperature data");
+  }
+  return true;
+}
 
 // TODO Change to Neopixel
 void handleRoot()
@@ -110,6 +148,12 @@ void handleRoot()
   digitalWrite(led, 1);
   server.send(200, "text/plain", "hello from esp32!");
   digitalWrite(led, 0);
+}
+void handleTemp() {
+String message = "Current Temperature: ";
+message+= tempC;
+message+= "\n";
+server.send(200, "text/plain", message);
 }
 
 void handleNotFound()
