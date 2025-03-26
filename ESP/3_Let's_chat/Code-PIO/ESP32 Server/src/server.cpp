@@ -24,6 +24,9 @@
 // Webpage
 #include "html.h"
 
+//NeoPixel
+#include "neopixel.hpp"
+
 /*******************************
  * Protptypes
  *******************************/
@@ -43,14 +46,14 @@ const char *password = "password";
 const int SECOND = 1000;
 static float tempC;
 
-// TODO Add Code to read temperature
+// DONE Add Code to read temperature
 // TODO Add Code to manage LED(s)
-// TODO handle client GET
+// DONE handle client GET
 // TODO handle client PUT
 
 WebServer server(80);
 
-const int led = 2;
+const int LED = 2;
 // DS1820 Data wire is plugged into GPIO 10 on the ESP32
 #define ONE_WIRE_BUS 10
 
@@ -67,9 +70,11 @@ auto timer = timer_create_default(); // create a timer with default settings
  *******************************/
 void setup(void)
 {
-  pinMode(led, OUTPUT);
-  digitalWrite(led, 0);
+  // Start the neopixel
+  npsetup();
+  // Start the serial port
   Serial.begin(115200);
+  // Start the WiFi
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   Serial.println("");
@@ -93,6 +98,7 @@ void setup(void)
   // Start up the temperature library
   sensors.begin();
   timer.every(2 * SECOND, readtemp);
+  timer.every(0.5 * SECOND, npblink);
 
   server.on("/", MainPage); /*Client request handling: calls the function to serve HTML page */
 
@@ -110,12 +116,13 @@ void setup(void)
 /*******************************
  * Loop
  *******************************/
-// TODO Remove blocking code
+// DONE Remove blocking code
 void loop(void)
 {
   server.handleClient();
   // delay(2); // allow the cpu to switch to other tasks
   timer.tick();
+  // nploop();
 }
 
 /*******************************
@@ -145,11 +152,11 @@ bool readtemp(void *)
   return true;
 }
 
-// TODO Change to Neopixel
+// DONE Change to Neopixel
 
 void handleNotFound()
 {
-  digitalWrite(led, 1);
+
   String message = "File Not Found\n\n";
   message += "URI: ";
   message += server.uri();
@@ -163,7 +170,8 @@ void handleNotFound()
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
   server.send(404, "text/plain", message);
-  digitalWrite(led, 0);
+  Serial.println(message);
+
 }
 void MainPage()
 {
