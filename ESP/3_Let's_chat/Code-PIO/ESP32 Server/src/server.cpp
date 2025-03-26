@@ -45,11 +45,13 @@ const char *ssid = "MRPMG";
 const char *password = "password";
 const int SECOND = 1000;
 static float tempC;
+// static DeviceAddress deviceAddress;
+// static bool waitForConversion = false;
 
 // DONE Add Code to read temperature
 // TODO Add Code to manage LED(s)
 // DONE handle client GET
-// TODO handle client PUT
+// TODO handle client PUT/POST
 
 WebServer server(80);
 
@@ -74,6 +76,7 @@ void setup(void)
   npsetup();
   // Start the serial port
   Serial.begin(115200);
+  delay(5000);
   // Start the WiFi
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -97,6 +100,9 @@ void setup(void)
   }
   // Start up the temperature library
   sensors.begin();
+  // if (!sensors.getAddress(deviceAddress, 0)) {
+  //   Serial.println("Unable to find address for Device 0");
+  // }
   timer.every(2 * SECOND, readtemp);
   timer.every(0.5 * SECOND, npblink);
 
@@ -111,6 +117,7 @@ void setup(void)
 
   server.begin();
   Serial.println("HTTP server started");
+  sensors.setWaitForConversion(false);
 }
 
 /*******************************
@@ -128,12 +135,13 @@ void loop(void)
 /*******************************
  * Utility Functions
  *******************************/
+
+ // DONE Investigate if this is the best way to read the temperature as this appears to block the loop code - set waitForConversion to false
+
 bool readtemp(void *)
 {
-  // call sensors.requestTemperatures() to issue a global temperature
-  // request to all devices on the bus
-  Serial.print("Requesting temperatures...");
-  sensors.requestTemperatures(); // Send the command to get temperatures
+  Serial.print("Requesting temperature...");
+  sensors.requestTemperaturesByIndex(0); // Send the command to get temperatures
   Serial.println("DONE");
   // After we got the temperatures, we can print them here.
   // We use the function ByIndex, and as an example get the temperature from the first sensor only.
