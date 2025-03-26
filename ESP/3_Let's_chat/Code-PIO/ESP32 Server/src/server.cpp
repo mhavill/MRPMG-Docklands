@@ -21,15 +21,18 @@
 // Include the libraries we need for temperature
 #include <OneWire.h>
 #include <DallasTemperature.h>
+// Webpage
+#include "html.h"
 
 /*******************************
  * Protptypes
  *******************************/
-void handleRoot();
+
 void handleNotFound();
 void setup(void);
 bool readtemp(void *);
-void handleTemp();
+void MainPage();
+void Temp();
 
 /*******************************
  * Definitions
@@ -89,14 +92,14 @@ void setup(void)
   }
   // Start up the temperature library
   sensors.begin();
-  timer.every(10 * SECOND, readtemp);
+  timer.every(2 * SECOND, readtemp);
 
-  server.on("/", handleRoot);
+  server.on("/", MainPage); /*Client request handling: calls the function to serve HTML page */
 
   server.on("/inline", []()
             { server.send(200, "text/plain", "this works as well"); });
 
-  server.on("/temp", handleTemp);
+  server.on("/readTemp", Temp);
 
   server.onNotFound(handleNotFound);
 
@@ -143,18 +146,6 @@ bool readtemp(void *)
 }
 
 // TODO Change to Neopixel
-void handleRoot()
-{
-  digitalWrite(led, 1);
-  server.send(200, "text/plain", "hello from esp32!");
-  digitalWrite(led, 0);
-}
-void handleTemp() {
-String message = "Current Temperature: ";
-message+= tempC;
-message+= "\n";
-server.send(200, "text/plain", message);
-}
 
 void handleNotFound()
 {
@@ -173,4 +164,15 @@ void handleNotFound()
   }
   server.send(404, "text/plain", message);
   digitalWrite(led, 0);
+}
+void MainPage()
+{
+  String _html_page = html_page;             /*Read The HTML Page*/
+  server.send(200, "text/html", _html_page); /*Send the code to the web server*/
+}
+
+void Temp()
+{
+  String TempValue = String(tempC);          // Convert it into string
+  server.send(200, "text/plane", TempValue); // Send updated temperature value to the web server
 }
