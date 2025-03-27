@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "ESP/3_Let's_chat/Code-PIO/ESP32 Server"
+		},
+		{
+			"path": "ESP/3_Let's_chat/Code-PIO/ESP32 Client"
 		}
 	],
 	"settings": {}
