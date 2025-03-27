@@ -23,8 +23,10 @@
 #include <DallasTemperature.h>
 // Webpage
 #include "html.h"
+#include <iostream>
+#include <string>
 
-//NeoPixel
+// NeoPixel
 #include "neopixel.hpp"
 
 /*******************************
@@ -36,6 +38,7 @@ void setup(void);
 bool readtemp(void *);
 void MainPage();
 void Temp();
+void LEDControl();
 
 /*******************************
  * Definitions
@@ -43,6 +46,7 @@ void Temp();
 
 const char *ssid = "MRPMG";
 const char *password = "password";
+#define device "ESP32_server"
 const int SECOND = 1000;
 static float tempC;
 // static DeviceAddress deviceAddress;
@@ -76,9 +80,10 @@ void setup(void)
   npsetup();
   // Start the serial port
   Serial.begin(115200);
-  delay(5000);
+  delay(SECOND);
   // Start the WiFi
-  WiFi.mode(WIFI_STA);
+  // WiFi.mode(WIFI_STA);
+  WiFi.hostname(device);
   WiFi.begin(ssid, password);
   Serial.println("");
 
@@ -100,9 +105,7 @@ void setup(void)
   }
   // Start up the temperature library
   sensors.begin();
-  // if (!sensors.getAddress(deviceAddress, 0)) {
-  //   Serial.println("Unable to find address for Device 0");
-  // }
+
   timer.every(2 * SECOND, readtemp);
   timer.every(0.5 * SECOND, npblink);
 
@@ -112,6 +115,8 @@ void setup(void)
             { server.send(200, "text/plain", "this works as well"); });
 
   server.on("/readTemp", Temp);
+
+  server.on("/LEDupdate", LEDControl);
 
   server.onNotFound(handleNotFound);
 
@@ -136,7 +141,7 @@ void loop(void)
  * Utility Functions
  *******************************/
 
- // DONE Investigate if this is the best way to read the temperature as this appears to block the loop code - set waitForConversion to false
+// DONE Investigate if this is the best way to read the temperature as this appears to block the loop code - set waitForConversion to false
 
 bool readtemp(void *)
 {
@@ -179,7 +184,6 @@ void handleNotFound()
   }
   server.send(404, "text/plain", message);
   Serial.println(message);
-
 }
 void MainPage()
 {
@@ -191,4 +195,30 @@ void Temp()
 {
   String TempValue = String(tempC);          // Convert it into string
   server.send(200, "text/plane", TempValue); // Send updated temperature value to the web server
+}
+
+void LEDControl()
+{
+  // Stop the LED from blinking
+  blink = false;
+  Serial.println("LED Control activated");
+  String message = "LED Control activated\n\n";
+  message += "URI: ";
+  message += server.uri();
+  message += "\nMethod: ";
+  message += (server.method() == HTTP_GET) ? "GET" : "POST";
+  message += "\nArguments: ";
+  message += server.args();
+  message += "\n";
+  for (uint8_t i = 0; i < server.args(); i++)
+  {
+    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+  }
+  Serial.print(message);
+  uint8_t LEDred = server.arg(0).toInt(); // Convert and read the LED red
+  uint8_t LEDgreen = server.arg(1).toInt();  // Convert and read the LED green
+  uint8_t LEDblue = server.arg(2).toInt();   // Convert and read the LED blue
+  colorWipe(strip.Color(LEDred, LEDgreen, LEDblue), 50); // Set the LED colour
+
+  server.send(200, "text/plane", message); // Send the LED status to the web server
 }

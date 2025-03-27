@@ -26,8 +26,8 @@ const char WIFI_PASSWORD[] = "password";
 
 String HOST_NAME = "http://ESP32.local"; 
 String PATH_NAME = "/LEDupdate"; 
-// String PATH_NAME   = "/products/arduino.php";      // CHANGE IT
-String queryString = "red=000&green=256&blue=000";
+String queryString = "red=000&green=128&blue=128"; //DON'T exceed 255!!!
+#define device "ESP32_client"
 
 /*******************************
  * Setup
@@ -38,6 +38,7 @@ void setup() {
   Serial.begin(115200);
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.hostname(device);
   Serial.println("Connecting");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
