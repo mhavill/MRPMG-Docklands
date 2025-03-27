@@ -37,8 +37,12 @@ String queryString = "red=000&green=128&blue=128"; //DON'T exceed 255!!!
 void setup() {
   Serial.begin(115200);
 
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  
   WiFi.hostname(device);
+  delay(500);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  printf("Connecting to %s as %s\n", WIFI_SSID, device);
+
   Serial.println("Connecting");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -62,7 +66,7 @@ void setup() {
       String payload = http.getString();
       Serial.println(payload);
     } else {
-      // HTTP header has been send and Server response header has been handled
+      // HTTP header has been sent and Server response header has been handled
       Serial.printf("[HTTP] POST... code: %d\n", httpCode);
     }
   } else {
