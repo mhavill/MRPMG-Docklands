@@ -13,6 +13,11 @@
 
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <ESPmDNS.h>
+#include <arduino-timer.h>
+
+// NeoPixel
+#include "neopixel.hpp"
 
 /*******************************
  * Protptypes
@@ -21,36 +26,43 @@
 /*******************************
  * Definitions
  *******************************/
-const char WIFI_SSID[] = "MRPMG";         
-const char WIFI_PASSWORD[] = "password"; 
+const char WIFI_SSID[] = "MRPMG";
+const char WIFI_PASSWORD[] = "password";
 
-String HOST_NAME = "http://ESP32.local"; 
-String PATH_NAME = "/LEDupdate"; 
-String queryString = "red=000&green=128&blue=128"; //DON'T exceed 255!!!
+String HOST_NAME = "http://esp32server.local";
+String PATH_NAME = "/LEDupdate";
+String queryString = "red=000&green=128&blue=128"; // DON'T exceed 255!!!
 #define device "ESP32_client"
+auto timer = timer_create_default(); // create a timer with default settings
+const int SECOND = 1000;
 
 /*******************************
  * Setup
  *******************************/
 
-
-void setup() {
+void setup()
+{
   Serial.begin(115200);
 
-  
   WiFi.hostname(device);
   delay(500);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   printf("Connecting to %s as %s\n", WIFI_SSID, device);
 
   Serial.println("Connecting");
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     delay(500);
     Serial.print(".");
   }
   Serial.println("");
   Serial.print("Connected to WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
+
+  if (MDNS.begin("esp32client"))
+  {
+    Serial.println("MDNS responder started");
+  }
 
   HTTPClient http;
 
@@ -60,28 +72,37 @@ void setup() {
   int httpCode = http.POST(queryString);
 
   // httpCode will be negative on error
-  if (httpCode > 0) {
+  if (httpCode > 0)
+  {
     // file found at server
-    if (httpCode == HTTP_CODE_OK) {
+    if (httpCode == HTTP_CODE_OK)
+    {
       String payload = http.getString();
       Serial.println(payload);
-    } else {
+    }
+    else
+    {
       // HTTP header has been sent and Server response header has been handled
       Serial.printf("[HTTP] POST... code: %d\n", httpCode);
     }
-  } else {
+  }
+  else
+  {
     Serial.printf("[HTTP] POST... failed, error: %s\n", http.errorToString(httpCode).c_str());
   }
 
   http.end();
+
+  timer.every(0.5 * SECOND, npblink);
 }
 /*******************************
  * Loop
  *******************************/
 
- void loop()
- {
- }
+void loop()
+{
+  timer.tick();
+}
 /*******************************
  * Utility Functions
  *******************************/

@@ -99,7 +99,7 @@ void setup(void)
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
-  if (MDNS.begin("esp32"))
+  if (MDNS.begin("esp32server"))
   {
     Serial.println("MDNS responder started");
   }
@@ -215,10 +215,10 @@ void LEDControl()
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
   Serial.print(message);
-  uint8_t LEDred = server.arg(0).toInt(); // Convert and read the LED red
-  uint8_t LEDgreen = server.arg(1).toInt();  // Convert and read the LED green
-  uint8_t LEDblue = server.arg(2).toInt();   // Convert and read the LED blue
-  colorWipe(strip.Color(LEDred, LEDgreen, LEDblue), 50); // Set the LED colour
+  uint8_t LEDred = server.arg(0).toInt();                   // Convert and read the LED red
+  uint8_t LEDgreen = server.arg(1).toInt();                 // Convert and read the LED green
+  uint8_t LEDblue = server.arg(2).toInt();                  // Convert and read the LED blue
+  theaterChase(strip.Color(LEDred, LEDgreen, LEDblue), 50); // Set the LED colour
 
   server.send(200, "text/plane", message); // Send the LED status to the web server
 }
