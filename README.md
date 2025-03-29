@@ -55,3 +55,6 @@ You will find that both platforms have different use cases with advantages and d
 ### 3. Lets have a chat
 
 Communicating between platforms is a common feature which builds comprehensive solutions.  The comms may happen over serial, LAN, WiFI, Bluetooth etc.
+
+This [block diagram](Documentation/BlockDiagram.drawio.svg) shows the set up for this phase.
+![3 . Let's chat](Documentation/BlockDiagram.drawio.svg)
