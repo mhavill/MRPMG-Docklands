@@ -103,9 +103,9 @@ bool readJoystick(void *)
 {
   int x = analogRead(JOY_X);
   int y = analogRead(JOY_Y);
-  int button = digitalRead(JOY_BUTTON);
+  bool button = digitalRead(JOY_BUTTON);
 
-  Serial.printf("X: %d, Y: %d, Button: %d\n", x, y, button);
+  Serial.printf("X: %d, Y: %d, Button: %d oldButtonState: %d\n", x, y, button, oldButtonState);
   RED = map(x, 0, 4095, 0, 127);
   GREEN = map(y, 0, 4095, 0, 127);
   BLUE = button == LOW ? 0 : 127;
