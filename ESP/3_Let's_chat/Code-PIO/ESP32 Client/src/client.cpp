@@ -22,6 +22,10 @@
 /*******************************
  * Protptypes
  *******************************/
+void setup(void);
+void loop(void);
+bool readJoystick(void *argument);
+void postHTTP();
 
 /*******************************
  * Definitions
@@ -32,9 +36,20 @@ const char WIFI_PASSWORD[] = "password";
 String HOST_NAME = "http://esp32server.local";
 String PATH_NAME = "/LEDupdate";
 String queryString = "red=000&green=128&blue=128"; // DON'T exceed 255!!!
-#define device "ESP32_client"
-auto timer = timer_create_default(); // create a timer with default settings
+#define device "ESP32client"
+auto timer = timer_create_default(); // create a timr with default settings
 const int SECOND = 1000;
+
+// Joystick
+#define JOY_X 35
+#define JOY_Y 34
+#define JOY_BUTTON 39
+bool oldButtonState = HIGH;
+
+// LED variables
+uint8_t RED = 0;
+uint8_t GREEN = 0;
+uint8_t BLUE = 0;
 
 /*******************************
  * Setup
@@ -59,13 +74,63 @@ void setup()
   Serial.print("Connected to WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
 
-  if (MDNS.begin("esp32client"))
+  if (MDNS.begin(device))
   {
     Serial.println("MDNS responder started");
   }
+  postHTTP();
+  // setup the Joystick
+  pinMode(JOY_X, INPUT);
+  pinMode(JOY_Y, INPUT);
+  pinMode(JOY_BUTTON, INPUT_PULLUP);
 
+  timer.every(0.5 * SECOND, npblink);
+  timer.every(0.5 * SECOND, readJoystick);
+}
+/*******************************
+ * Loop
+ *******************************/
+
+void loop()
+{
+  timer.tick();
+}
+/*******************************
+ * Utility Functions
+ *******************************/
+
+bool readJoystick(void *)
+{
+  int x = analogRead(JOY_X);
+  int y = analogRead(JOY_Y);
+  int button = digitalRead(JOY_BUTTON);
+
+  Serial.printf("X: %d, Y: %d, Button: %d\n", x, y, button);
+  RED = map(x, 0, 4095, 0, 127);
+  GREEN = map(y, 0, 4095, 0, 127);
+  BLUE = button == LOW ? 0 : 127;
+
+  colorWipe(strip.Color(RED, GREEN, BLUE), 50);
+  if (JOY_BUTTON != oldButtonState)
+  {
+    oldButtonState = JOY_BUTTON;
+    Serial.print("Button Pressed: ");
+    queryString = "red=";
+    queryString += RED;
+    queryString += "&green=";
+    queryString += GREEN;
+    queryString += "&blue=";
+    queryString += BLUE;
+    Serial.println(queryString);
+    postHTTP();
+  }
+
+  return true;
+}
+
+void postHTTP()
+{
   HTTPClient http;
-
   http.begin(HOST_NAME + PATH_NAME);
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
@@ -92,17 +157,4 @@ void setup()
   }
 
   http.end();
-
-  timer.every(0.5 * SECOND, npblink);
 }
-/*******************************
- * Loop
- *******************************/
-
-void loop()
-{
-  timer.tick();
-}
-/*******************************
- * Utility Functions
- *******************************/

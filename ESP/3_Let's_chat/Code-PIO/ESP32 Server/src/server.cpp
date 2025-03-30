@@ -46,16 +46,16 @@ void LEDControl();
 
 const char *ssid = "MRPMG";
 const char *password = "password";
-#define device "ESP32_server"
+#define device "ESP32server"
 const int SECOND = 1000;
 static float tempC;
 // static DeviceAddress deviceAddress;
 // static bool waitForConversion = false;
 
 // DONE Add Code to read temperature
-// TODO Add Code to manage LED(s)
+// DONE Add Code to manage LED(s)
 // DONE handle client GET
-// TODO handle client PUT/POST
+// DONE handle client PUT/POST
 
 WebServer server(80);
 
@@ -99,7 +99,7 @@ void setup(void)
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
-  if (MDNS.begin("esp32server"))
+  if (MDNS.begin(device))
   {
     Serial.println("MDNS responder started");
   }
