@@ -31,8 +31,8 @@ String httpGETRequest(const char* serverName);
 /*******************************
  * Definitions
 *******************************/
-const char* ssid = "Bender";
-const char* password = "blueballbangboob";
+const char WIFI_SSID[] = "MRPMG";
+const char WIFI_PASSWORD[] = "password";
 
 //Your Domain name with URL path or IP address with path
 String serverName = "http://pi5.local:1880/update-sensor";
@@ -55,7 +55,7 @@ float sensorReadingsArr[3];
 void setup() {
   Serial.begin(115200); 
 
-  WiFi.begin(ssid, password);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   // printf("Connecting to %s with %s\n", ssid, password);
   Serial.println("Connecting");
   while(WiFi.status() != WL_CONNECTED) {
