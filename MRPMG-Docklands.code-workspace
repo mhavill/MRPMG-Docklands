@@ -8,6 +8,13 @@
 		},
 		{
 			"path": "ESP/3_Let's_chat/Code-PIO/ESP32 Client"
+		},
+		{
+			"name": "ESP32NodeRedClient",
+			"path": "ESP/3_Let's_chat/Code-PIO/ESP32NodeRedClient"
+		},
+		{
+			"path": "../../PlatformIO-Projects/NodeRedClient"
 		}
 	],
 	"settings": {}

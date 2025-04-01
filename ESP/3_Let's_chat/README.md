@@ -13,4 +13,3 @@ GET to get the current temperature measured on the [Dallas DS1820](https://www.e
 PUT to change the [Neopixel LED](https://core-electronics.com.au/guides/ws2812-addressable-leds-arduino-quickstart-guide/)
 
 You can use a device browser to send the HTTP to test the responses.
-

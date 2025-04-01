@@ -58,3 +58,5 @@ Communicating between platforms is a common feature which builds comprehensive s
 
 This [block diagram](Documentation/BlockDiagram.drawio.svg) shows the set up for this phase.
 ![3 . Let's chat](Documentation/BlockDiagram.drawio.svg)
+
+At the moment, we have not determined the components to integrate the RPi Zero, but we are going to create a realtime dashboard on the screen, possibly using Node Red and receiving POSTs from the ESP32-Server.
