@@ -1,4 +1,4 @@
-# Let's Chat -ESP32
+# Let's Chat - ESP32
 
 ## ESP32 Server
 

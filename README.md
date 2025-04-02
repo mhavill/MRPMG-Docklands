@@ -52,11 +52,13 @@ Do you have the correct driver?
 
 You will find that both platforms have different use cases with advantages and disadvntages but we will get to understand how they are best used together.
 
-### 3. Lets have a chat
+### 3. Let's chat
 
 Communicating between platforms is a common feature which builds comprehensive solutions.  The comms may happen over serial, LAN, WiFI, Bluetooth etc.
 
+In the examples created in this project, 3. Let's chat, we have chosen to use WiFi and HTTP. 
 This [block diagram](Documentation/BlockDiagram.drawio.svg) shows the set up for this phase.
 ![3 . Let's chat](Documentation/BlockDiagram.drawio.svg)
 
-At the moment, we have not determined the components to integrate the RPi Zero, but we are going to create a realtime dashboard on the screen, possibly using Node Red and receiving POSTs from the ESP32-Server.
+For the ESP32 examples click through to [ESP\3_Let's_chat\README.md](ESP\3_Let's_chat\README.md)
+For the RPiZero implementation click through to [RPi\3_Let's_Chat\README.MD](RPi\3_Let's_Chat\README.MD)
