@@ -35,7 +35,7 @@ const char WIFI_SSID[] = "MRPMG";
 const char WIFI_PASSWORD[] = "password";
 
 //Your Domain name with URL path or IP address with path
-String serverName = "http://pi5.local:1880/update-sensor";
+String serverName = "http://10.1.1.101:1880/update-sensor";
 
 // the following variables are unsigned longs because the time, measured in
 // milliseconds, will quickly become a bigger number than can be stored in an int.
