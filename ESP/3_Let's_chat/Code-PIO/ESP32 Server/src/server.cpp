@@ -16,7 +16,7 @@
 #include <ESPmDNS.h>
 #include <arduino-timer.h>
 
-// #include "secrets.h"
+#include "secrets.h"
 
 // Include the libraries we need for temperature
 #include <OneWire.h>
@@ -44,8 +44,8 @@ void LEDControl();
  * Definitions
  *******************************/
 
-const char *ssid = "MRPMG";
-const char *password = "password";
+// const char *ssid = "";
+// const char *password = "";
 #define device "ESP32server"
 const int SECOND = 1000;
 static float tempC;
@@ -82,7 +82,7 @@ void setup(void)
   Serial.begin(115200);
   delay(SECOND);
   // Start the WiFi
-  // WiFi.mode(WIFI_STA);
+  WiFi.mode(WIFI_STA);
   WiFi.hostname(device);
   WiFi.begin(ssid, password);
   Serial.println("");
@@ -106,7 +106,7 @@ void setup(void)
   // Start up the temperature library
   sensors.begin();
 
-  timer.every(2 * SECOND, readtemp);
+  // timer.every(2 * SECOND, readtemp);
   timer.every(0.5 * SECOND, npblink);
 
   server.on("/", MainPage); /*Client request handling: calls the function to serve HTML page */
@@ -218,7 +218,10 @@ void LEDControl()
   uint8_t LEDred = server.arg(0).toInt();                   // Convert and read the LED red
   uint8_t LEDgreen = server.arg(1).toInt();                 // Convert and read the LED green
   uint8_t LEDblue = server.arg(2).toInt();                  // Convert and read the LED blue
-  theaterChase(strip.Color(LEDred, LEDgreen, LEDblue), 50); // Set the LED colour
+  // theaterChase(strip.Color(LEDred, LEDgreen, LEDblue), 50); // Set the LED colour
+  strip.setPixelColor(0, strip.Color(LEDred, LEDgreen, LEDblue));
+  Serial.printf("Red %d, Green %d, Blue %d",LEDred, LEDgreen, LEDblue );
+  strip.show();
 
   server.send(200, "text/plane", message); // Send the LED status to the web server
 }

@@ -4,30 +4,196 @@
 */
 
 const char html_page[] PROGMEM = R"rawSrting(
-<!DOCTYPE html>
-<html>
-  <style>
-    body {font-family: sans-serif;}
-    h1 {text-align: center; font-size: 30px;}
-    p {text-align: center; color: #4CAF50; font-size: 40px;}
-  </style>
- 
-<body>
-  <h1>DS18B20 Temperature Monitoring With ESP32</h1><br>
-  <p>Temperature: <span id="TempValue">0</span>&degC</p><br>
 
-  <script>
-    setInterval(function() {
-      var xhttp = new XMLHttpRequest();
-     xhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-         document.getElementById("TempValue").innerHTML = this.responseText;
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Message Controller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-      };
-     xhttp.open("GET", "readTemp", true);
-      xhttp.send();
-    },50);
-  </script>
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        h1 {
+            color: #667eea;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .session-info {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+        }
+        
+        .session-info p {
+            color: #4a5568;
+            font-size: 14px;
+            margin: 4px 0;
+        }
+        
+        .session-info strong {
+            color: #2d3748;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #2d3748;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .char-count {
+            text-align: right;
+            font-size: 12px;
+            color: #718096;
+            margin-top: 4px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ESP32 Message Controller</h1>
+        </div>
+        
+        <div class="session-info">
+            <p><strong>Session Started:</strong></p>
+            <p id="timestamp"></p>
+        </div>
+        
+        <form action="http://ESP32server.local/submit" method="POST">
+            <div class="form-group">
+                <label for="upperText">Upper Text Message</label>
+                <input type="text" id="upperText" name="upperText" maxlength="100" required>
+                <div class="char-count"><span id="upperCount">0</span>/100</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="lowerText">Lower Text Message</label>
+                <input type="text" id="lowerText" name="lowerText" maxlength="100" required>
+                <div class="char-count"><span id="lowerCount">0</span>/100</div>
+            </div>
+            
+            <button type="submit">Submit Messages</button>
+        </form>
+    </div>
+    
+    <script>
+        // Set timestamp when page loads
+        const now = new Date();
+        const options = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        };
+        document.getElementById('timestamp').textContent = now.toLocaleString('en-US', options);
+        
+        // Character counters
+        const upperInput = document.getElementById('upperText');
+        const lowerInput = document.getElementById('lowerText');
+        const upperCount = document.getElementById('upperCount');
+        const lowerCount = document.getElementById('lowerCount');
+        
+        upperInput.addEventListener('input', function() {
+            upperCount.textContent = this.value.length;
+        });
+        
+        lowerInput.addEventListener('input', function() {
+            lowerCount.textContent = this.value.length;
+        });
+    </script>
 </body>
 </html>
 )rawSrting";
