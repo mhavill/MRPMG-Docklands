@@ -36,6 +36,8 @@
 
 void handleNotFound();
 void setup();
+void loop();
+String urlDecode(String input) ;
 void MainPage();
 void MainPageSubmit();
 void LEDControl();
@@ -138,6 +140,9 @@ uint8_t wheelval = 0;
 
 std::string upper_msg;
 std::string lower_msg;
+std::string top_msg;
+  uint16_t background = 10;
+  uint16_t speed = 18;
 
 
 
@@ -176,7 +181,7 @@ void setup(void)
  
   // timer.every(2 * SECOND, readtemp);
   timer.every(0.5 * SECOND, npblink);
-  timer.every(10, display);
+  timer.every(speed, display);
 
   server.on("/", MainPage); /*Client request handling: calls the function to serve HTML page */
 
@@ -184,6 +189,8 @@ void setup(void)
             { server.send(200, "text/plain", "this works as well"); });
 
   server.on("/submit", HTTP_POST, MainPageSubmit);
+    // server.on("/submit", HTTP_POST, []() 
+
 
   server.on("/LEDupdate", LEDControl);
 
@@ -220,8 +227,10 @@ void setup(void)
 
   //set up initial messages
   lower_msg  = ssid;
-  upper_msg = "Whoa!- Is this working?";
-  Serial.printf("lower_msg = %s, upper_msg %s" , lower_msg.c_str(), upper_msg.c_str() );
+  upper_msg = "Is this working?";
+  top_msg = "MTG";
+  Serial.printf("lower_msg = %s, upper_msg = %s \n" , lower_msg.c_str(), upper_msg.c_str() );
+
 
 } 
 
@@ -242,19 +251,73 @@ void loop(void)
 /*******************************
  * Utility Functions
  *******************************/
+String urlDecode(String input) {
+  String decoded = "";
+  char a, b;
+  unsigned int len = input.length();
+  
+  // Serial.println("=== Starting URL Decode ===");
+  // Serial.print("Input length: ");
+  // Serial.println(len);
+  // DON'T print the whole string at once - it might be corrupted
+  
+  for (unsigned int i = 0; i < len; i++) {
+    char c = input[i];
+    
+    // Print each character carefully
+    // Serial.print("Pos ");
+    // Serial.print(i);
+    // Serial.print(": ");
+    // Serial.println((int)c);
+    
+    if (c == '+') {
+      decoded += ' ';
+    } else if (c == '%') {
+      if (i + 2 < len) {
+        a = input[i + 1];
+        b = input[i + 2];
+        
+        // Convert hex digits to decimal
+        if (a >= '0' && a <= '9') a = a - '0';
+        else if (a >= 'a' && a <= 'f') a = a - 'a' + 10;
+        else if (a >= 'A' && a <= 'F') a = a - 'A' + 10;
+        
+        if (b >= '0' && b <= '9') b = b - '0';
+        else if (b >= 'a' && b <= 'f') b = b - 'a' + 10;
+        else if (b >= 'A' && b <= 'F') b = b - 'B' + 10;
+        
+        decoded += char(16 * a + b);
+        i += 2;
+      } else {
+        decoded += '%';
+      }
+    } else {
+      decoded += c;
+    }
+  }
+  
+  // Serial.println("=== Decode Complete ===");
+  
+  return decoded;
+}
 
 bool display (void *)
 {   updateBackground();
   scrollText(wheelval, upper_msg.c_str());    //Prints Scrolling text with a rainbow color
+  printTextRainbowCentered(wheelval, lower_msg.c_str(), 25);  //Prints text X-Centered to chosen Y position with rainbow color
+    printTextRainbowCentered(wheelval, top_msg.c_str(), 0);  //Prints text X-Centered to chosen Y position with rainbow color
   // printTextRainbowCentered(wheelval, lower_msg.c_str(), 24);  //Prints text X-Centered to chosen Y position with rainbow color
-  scrollText(wheelval, lower_msg.c_str());  //Prints text X-Centered to chosen Y position with rainbow color
+  // scrollText(wheelval, lower_msg.c_str());  //Prints text X-Centered to chosen Y position with rainbow color
 
-  gfx_layer_fg.display();
+  // gfx_layer_fg.display();
   // gfx_layer_bg.display();
 
-  // gfx_compositor.Blend(gfx_layer_bg, gfx_layer_fg); // blend and immediately display
+  gfx_compositor.Blend(gfx_layer_bg, gfx_layer_fg); // blend and immediately display
+
 
   wheelval += 1;
+  //update timer interval in case it changed
+  timer.every(100/speed, display);
   return true;
 }
 // DONE Change to Neopixel
@@ -282,34 +345,57 @@ void MainPage()
   String _html_page = html_page;             /*Read The HTML Page*/
   server.send(200, "text/html", _html_page); /*Send the code to the web server*/
 }
+
 void MainPageSubmit()
-{
-  String message = "Main Page Submit Activated\n\n";
-  message += "URI: ";
-  message += server.uri();
-  message += "\nMethod: ";
-  message += (server.method() == HTTP_GET) ? "GET" : "POST";
-  message += "\nArguments: ";
-  message += server.args();
-  message += "\n";
-  for (uint8_t i = 0; i < server.args(); i++)
-  {
-    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
-  }
-  Serial.print(message);
+{   
 
-  //Clear the previous messages
-  upper_msg = "";
-  lower_msg = "";
+  String upperText = server.arg("upperText");
+  String lowerText = server.arg("lowerText");  
+  String topText = server.arg("topText");
 
-  upper_msg = server.arg("upperText").c_str();
-  lower_msg = server.arg("lowerText").c_str();
+  speed = server.arg("speed").toInt()*10;
+  background = server.arg("background").toInt();
 
-  Serial.printf("upper_msg = %s, lower_msg %s" , upper_msg.c_str(), lower_msg.c_str() );
+  // Decode the URL-encoded strings
+  String upperText2 = urlDecode(upperText);
+  String lowerText2 = urlDecode(lowerText);
+  String topText2 = urlDecode(topText);
 
-  server.send(200, "text/plane", message);
+  Serial.println(" ***************************");
+  Serial.print("Received upperText: ");
+  Serial.println(upperText2);
+  Serial.print("Received lowerText: ");
+  Serial.println(lowerText2);
+
+  Serial.print("Received topText: ");
+  Serial.println(topText2);
+  Serial.print("Received speed: ");
+  Serial.println(speed);
+  Serial.print("Received background: ");
+  Serial.println(background);
+
+
+  // // Now use upperText and lowerText - they should have the correct characters
+  // Serial.println(upperText2);
+  // Serial.println(lowerText2);
+  
+  server.send(200, "text/plain", "Messages received!");
+  
+  // Clear first, then assign with explicit std::string construction
+  upper_msg.clear();
+  lower_msg.clear();
+  top_msg.clear();
+
+  upper_msg = std::string(upperText2.c_str());
+  lower_msg = std::string(lowerText2.c_str());
+  top_msg = std::string(topText2.c_str());
+
+  // Serial.print("upper_msg = ");
+  // Serial.print(upper_msg.c_str());
+  // Serial.print(", lower_msg = ");
+  // Serial.println(lower_msg.c_str());
+  // Serial.println(" ***************************");
 }
-
 
 void LEDControl()
 {
@@ -375,6 +461,9 @@ void printTextRainbowCentered(int colorWheelOffset, const char *text, int yPos) 
   int xPos = (gfx_layer_fg.width() - textWidth) / 2;
 
   gfx_layer_fg.setCursor(xPos, yPos);  // Set cursor position for centered text
+        // Clear the area of text to be drawn to
+    gfx_layer_fg.drawRect(0, yPos, gfx_layer_fg.width() , 8, gfx_layer_fg.color565(0, 0, 0));
+    gfx_layer_fg.fillRect(0, yPos, gfx_layer_fg.width() , 8, gfx_layer_fg.color565(0, 0, 0));
 
   // Draw text with a rotating color
   for (uint8_t w = 0; w < strlen(text); w++) {
@@ -433,6 +522,11 @@ void drawTextCentered(int colorWheelOffset, const char *text, int yPos) {
 
   gfx_layer_fg.setCursor(xPos, yPos);  // start at top left, with 8 pixel of spacing
   uint8_t w = 0;
+
+    //   // Clear the area of text to be drawn to
+    // gfx_layer_fg.drawRect(0, yPos, gfx_layer_fg.width() , 16, gfx_layer_fg.color565(0, 0, 0));
+    // gfx_layer_fg.fillRect(0, yPos, gfx_layer_fg.width() , 16, gfx_layer_fg.color565(0, 0, 0));
+
   //const char *str = "ESP32 DMA";
   const char *str = text;
   for (w = 0; w < strlen(str); w++) {
@@ -465,5 +559,5 @@ void updateBackground()
         }
     } 
 
-     gfx_layer_bg.dim(10); // darken it a little
+     gfx_layer_bg.dim(background); // darken it a little
 }

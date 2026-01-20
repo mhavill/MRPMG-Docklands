@@ -4,9 +4,6 @@
 */
 
 const char html_page[] PROGMEM = R"rawSrting(
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -81,7 +78,8 @@ const char html_page[] PROGMEM = R"rawSrting(
             font-size: 14px;
         }
         
-        input[type="text"] {
+        input[type="text"],
+        input[type="number"] {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #e2e8f0;
@@ -91,7 +89,8 @@ const char html_page[] PROGMEM = R"rawSrting(
             font-family: inherit;
         }
         
-        input[type="text"]:focus {
+        input[type="text"]:focus,
+        input[type="number"]:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -102,6 +101,12 @@ const char html_page[] PROGMEM = R"rawSrting(
             font-size: 12px;
             color: #718096;
             margin-top: 4px;
+        }
+        
+        .number-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
         }
         
         button {
@@ -149,17 +154,35 @@ const char html_page[] PROGMEM = R"rawSrting(
             <p id="timestamp"></p>
         </div>
         
-        <form action="http://ESP32server.local/submit" method="POST">
+        <form action="http://ESP32server.local/submit" method="POST" accept-charset="ISO-8859-1">
+            <div class="form-group">
+                <label for="topText">Top Text Message</label>
+                <input type="text" id="topText" name="topText" maxlength="11" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <div class="char-count"><span id="topCount">0</span>/11</div>
+            </div>
+            
             <div class="form-group">
                 <label for="upperText">Upper Text Message</label>
-                <input type="text" id="upperText" name="upperText" maxlength="100" required>
+                <input type="text" id="upperText" name="upperText" maxlength="100" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 <div class="char-count"><span id="upperCount">0</span>/100</div>
             </div>
             
             <div class="form-group">
                 <label for="lowerText">Lower Text Message</label>
-                <input type="text" id="lowerText" name="lowerText" maxlength="100" required>
-                <div class="char-count"><span id="lowerCount">0</span>/100</div>
+                <input type="text" id="lowerText" name="lowerText" maxlength="11" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <div class="char-count"><span id="lowerCount">0</span>/11</div>
+            </div>
+            
+            <div class="number-inputs">
+                <div class="form-group">
+                    <label for="speed">Speed</label>
+                    <input type="number" id="speed" name="speed" min="1" max="100" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="background">Background</label>
+                    <input type="number" id="background" name="background" min="1" max="100" required>
+                </div>
             </div>
             
             <button type="submit">Submit Messages</button>
@@ -181,10 +204,16 @@ const char html_page[] PROGMEM = R"rawSrting(
         document.getElementById('timestamp').textContent = now.toLocaleString('en-US', options);
         
         // Character counters
+        const topInput = document.getElementById('topText');
         const upperInput = document.getElementById('upperText');
         const lowerInput = document.getElementById('lowerText');
+        const topCount = document.getElementById('topCount');
         const upperCount = document.getElementById('upperCount');
         const lowerCount = document.getElementById('lowerCount');
+        
+        topInput.addEventListener('input', function() {
+            topCount.textContent = this.value.length;
+        });
         
         upperInput.addEventListener('input', function() {
             upperCount.textContent = this.value.length;
