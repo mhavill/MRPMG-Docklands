@@ -16,8 +16,9 @@
 #include <WebServer.h>
 #include <ESPmDNS.h>
 #include <arduino-timer.h>
+#include <WiFiManager.h>          
 
-#include "secrets.h"
+// #include "secrets.h"
 
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #include <GFX_Layer.hpp>
@@ -106,7 +107,7 @@ auto timer = timer_create_default(); // create a timer with default settings
 #define NUM_LEDS PANE_WIDTH*PANE_HEIGHT
 
 uint16_t colorWheel(uint8_t pos);
-
+char ssid[32] = {0};
 
 //------------------------------------------------------------------------------------------------------------------
 
@@ -151,15 +152,34 @@ std::string top_msg;
  *******************************/
 void setup(void)
 {
-  // Start the neopixel
-  npsetup();
   // Start the serial port
   Serial.begin(115200);
   delay(SECOND);
+  // Start the neopixel
+  npsetup();
+
+  WiFiManager wm;
+
+bool res;
+
+wm.resetSettings();
+
+res = wm.autoConnect("AutoConnectAP","password"); // password protected ap
+if(!res) {
+
+Serial.println("Failed to connect");
+
+ESP.restart();
+}
+
+
+
   // Start the WiFi
-  WiFi.mode(WIFI_STA);
+  // WiFi.mode(WIFI_STA);
   WiFi.hostname(device);
-  WiFi.begin(ssid, password);
+  // TODO Use WiFiManager to simplify WiFi connection
+  strcpy((char*)ssid, WiFi.SSID().c_str());
+  // WiFi.begin(ssid, password);  
   Serial.println("");
 
   // Wait for connection
@@ -170,6 +190,7 @@ void setup(void)
   }
   Serial.println("");
   Serial.print("Connected to ");
+  // TODO Print the SSID from WiFiManager
   Serial.println(ssid);
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
@@ -226,6 +247,7 @@ void setup(void)
   gfx_layer_bg.clear();
 
   //set up initial messages
+  //TODO get SSID from WiFiManager
   lower_msg  = ssid;
   upper_msg = "Is this working?";
   top_msg = "MTG";
