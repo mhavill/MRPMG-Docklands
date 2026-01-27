@@ -48,6 +48,8 @@ void printTextRainbowCentered(int colorWheelOffset, const char *text, int yPos);
 void scrollText(int colorWheelOffset, const char *text);
 void drawTextCentered(int colorWheelOffset, const char *text, int yPos);
 void updateBackground();
+void text_display();
+void vumeter_display();
 bool display(void *);
 bool wmloop(void *);
 
@@ -139,7 +141,14 @@ std::string top_msg;
 uint16_t background = 10;
 uint16_t speed = 18;
 
-// select which pin will trigger the configuration portal when set to LOW
+enum display_type
+{
+  DISPLAY_TEXT,
+  DISPLAY_VUMETER
+};
+
+display_type current_display_type = DISPLAY_TEXT;
+
 #define TRIGGER_PIN 33
 
 /*******************************
@@ -250,13 +259,10 @@ void setup(void)
 /*******************************
  * Loop
  *******************************/
-// DONE Remove blocking code
 void loop(void)
 {
   server.handleClient();
-  // delay(2); // allow the cpu to switch to other tasks
   timer.tick();
-  // nploop();
 }
 
 /*******************************
@@ -272,9 +278,7 @@ bool wmloop(void *)
     // reset settings - for testing
     wm.resetSettings();
 
-
     ESP.restart();
-
   }
   return true;
 }
@@ -285,20 +289,9 @@ String urlDecode(String input)
   char a, b;
   unsigned int len = input.length();
 
-  // Serial.println("=== Starting URL Decode ===");
-  // Serial.print("Input length: ");
-  // Serial.println(len);
-  // DON'T print the whole string at once - it might be corrupted
-
   for (unsigned int i = 0; i < len; i++)
   {
     char c = input[i];
-
-    // Print each character carefully
-    // Serial.print("Pos ");
-    // Serial.print(i);
-    // Serial.print(": ");
-    // Serial.println((int)c);
 
     if (c == '+')
     {
@@ -340,12 +333,25 @@ String urlDecode(String input)
     }
   }
 
-  // Serial.println("=== Decode Complete ===");
-
   return decoded;
 }
 
-bool display(void *)
+bool display(void *) // Select which display to show
+{
+  switch(current_display_type)
+  {
+  case DISPLAY_TEXT:
+    text_display();
+    break;
+  case DISPLAY_VUMETER:
+    // vumeter_display();
+    break;
+  }
+
+  return true;
+}
+
+void text_display()
 {
   updateBackground();
   scrollText(wheelval, upper_msg.c_str());                   // Prints Scrolling text with a rainbow color
@@ -362,9 +368,13 @@ bool display(void *)
   wheelval += 1;
   // update timer interval in case it changed
   timer.every(100 / speed, display);
-  return true;
 }
-// DONE Change to Neopixel
+
+void vumeter_display()
+{
+  updateBackground();
+  // TODO implement VU meter display
+}
 
 void handleNotFound()
 {
