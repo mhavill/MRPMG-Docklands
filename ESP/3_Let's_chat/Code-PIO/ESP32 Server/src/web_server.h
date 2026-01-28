@@ -1,3 +1,12 @@
+/*******************************
+ * Header
+ * Name: web_server.h
+ * Purpose: VU Meter Webserver
+ * Created Date: 27/1/2026
+ * Updated Date: 27/1/2026
+ *******************************/
+
+
 /*
  * The webserver will attempt to connect to the primary ssid 5 times, with a delay
  * of 1 second between each attempt. If it fails to connect, it will retry
@@ -7,20 +16,80 @@
  * to its previously saved settings.
  */
 
+/*******************************
+ * Includes
+ *******************************/
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <colorutils.h>
+/*******************************
+ * Protptypes
+ *******************************/
+void handleWebSocketMessage(void *arg, uint8_t *data, size_t len);
+void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
+             void *arg, uint8_t *data, size_t len);
+void initWebSocket();
+String processor(const String& var);
+void setupWebServer();
 
-// // Replace with your primary network credentials
-// const char* ssid = "PrimarySSID";
-// const char* password = "PrimaryPassword";
-
-// // Replace with your secondary network credentials
-// const char* ssid2 = "SecondarySSID";
-// const char* password2 = "SecondaryPassword";
-
+/*******************************
+ * Definitions
+ *******************************/
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
+
+// AsyncWebServer server(80);
+
+const int LED = 2;
+#define EEPROM_SIZE 5
+#define LED_PIN 2
+#define M_WIDTH 16
+#define M_HEIGHT 16
+#define NUM_LEDS (M_WIDTH * M_HEIGHT)
+
+#define EEPROM_BRIGHTNESS 0
+#define EEPROM_GAIN 1
+#define EEPROM_SQUELCH 2
+#define EEPROM_PATTERN 3
+#define EEPROM_DISPLAY_TIME 4
+
+uint8_t numBands;
+uint8_t barWidth;
+uint8_t pattern;
+uint8_t brightness;
+uint16_t displayTime;
+bool autoChangePatterns = false;
+
+uint8_t peak[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+uint8_t prevFFTValue[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+uint8_t barHeights[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+// Colors and palettes
+DEFINE_GRADIENT_PALETTE(purple_gp){
+    0, 0, 212, 255,    // blue
+    255, 179, 0, 255}; // purple
+DEFINE_GRADIENT_PALETTE(outrun_gp){
+    0, 141, 0, 100,   // purple
+    127, 255, 192, 0, // yellow
+    255, 0, 5, 255};  // blue
+DEFINE_GRADIENT_PALETTE(greenblue_gp){
+    0, 0, 255, 60,    // green
+    64, 0, 236, 255,  // cyan
+    128, 0, 5, 255,   // blue
+    192, 0, 236, 255, // cyan
+    255, 0, 255, 60}; // green
+DEFINE_GRADIENT_PALETTE(redyellow_gp){
+    0, 200, 200, 200,    // white
+    64, 255, 218, 0,     // yellow
+    128, 231, 0, 0,      // red
+    192, 255, 218, 0,    // yellow
+    255, 200, 200, 200}; // white
+CRGBPalette16 purplePal = purple_gp;
+CRGBPalette16 outrunPal = outrun_gp;
+CRGBPalette16 greenbluePal = greenblue_gp;
+CRGBPalette16 heatPal = redyellow_gp;
+uint8_t colorTimer = 0;
 
 // Web server html
 const char index_html[] PROGMEM = R"rawliteral(
@@ -207,25 +276,9 @@ String processor(const String& var){
 
 void setupWebServer(){
 
-  uint8_t connectionAttempts = 0;
+  // uint8_t connectionAttempts = 0;
 
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay (1000);
-    Serial.println("Connecting to primary WiFi ...");
-    connectionAttempts++;
-    if (connectionAttempts > 5) break;    
-  }
 
-  while (WiFi.status() != WL_CONNECTED) {
-    WiFi.begin(ssid2, password2);
-    delay (1000);
-    Serial.println("Connecting to secondary WiFi ...");
-    connectionAttempts++;
-    if (connectionAttempts > 10) break;    
-  }
-
-  // Print ESP Local IP Address
   Serial.print("Local IP address: ");
   Serial.println(WiFi.localIP());
 

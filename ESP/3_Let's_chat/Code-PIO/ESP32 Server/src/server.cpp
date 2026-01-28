@@ -13,10 +13,13 @@
 
 #include <WiFi.h>
 #include <WiFiClient.h>
-#include <WebServer.h>
+#include <ESPAsyncWebServer.h>
 #include <ESPmDNS.h>
 #include <arduino-timer.h>
 #include <WiFiManager.h>
+#include <EEPROM.h>
+#include "web_server.h"
+#include "audio_reactive.h"
 
 // #include "secrets.h"
 
@@ -35,13 +38,13 @@
  * Protptypes
  *******************************/
 
-void handleNotFound();
+void handleNotFound(AsyncWebServerRequest *request);
 void setup();
 void loop();
 String urlDecode(String input);
-void MainPage();
-void MainPageSubmit();
-void LEDControl();
+void MainPage(AsyncWebServerRequest *request);
+void MainPageSubmit(AsyncWebServerRequest *request);
+void LEDControl(AsyncWebServerRequest *request);
 void layer_draw_callback(int16_t x, int16_t y, uint8_t r_data, uint8_t g_data, uint8_t b_data);
 uint16_t colorWheel(uint8_t pos);
 void printTextRainbowCentered(int colorWheelOffset, const char *text, int yPos);
@@ -57,21 +60,61 @@ bool wmloop(void *);
  * Definitions
  *******************************/
 
-// const char *ssid = "";
-// const char *password = "";
 #define device "ESP32server"
 const int SECOND = 1000;
 static float tempC;
-// static DeviceAddress deviceAddress;
-// static bool waitForConversion = false;
 
-// DONE Add Code to manage LED(s)
-// DONE handle client GET
-// DONE handle client PUT/POST
+// // AsyncWebServer server(80);
 
-WebServer server(80);
+// const int LED = 2;
+// #define EEPROM_SIZE 5
+// #define LED_PIN 2
+// #define M_WIDTH 16
+// #define M_HEIGHT 16
+// #define NUM_LEDS (M_WIDTH * M_HEIGHT)
 
-const int LED = 2;
+// #define EEPROM_BRIGHTNESS 0
+// #define EEPROM_GAIN 1
+// #define EEPROM_SQUELCH 2
+// #define EEPROM_PATTERN 3
+// #define EEPROM_DISPLAY_TIME 4
+
+// uint8_t numBands;
+// uint8_t barWidth;
+// uint8_t pattern;
+// uint8_t brightness;
+// uint16_t displayTime;
+// bool autoChangePatterns = false;
+
+// uint8_t peak[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+// uint8_t prevFFTValue[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+// uint8_t barHeights[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+// // Colors and palettes
+// DEFINE_GRADIENT_PALETTE(purple_gp){
+//     0, 0, 212, 255,    // blue
+//     255, 179, 0, 255}; // purple
+// DEFINE_GRADIENT_PALETTE(outrun_gp){
+//     0, 141, 0, 100,   // purple
+//     127, 255, 192, 0, // yellow
+//     255, 0, 5, 255};  // blue
+// DEFINE_GRADIENT_PALETTE(greenblue_gp){
+//     0, 0, 255, 60,    // green
+//     64, 0, 236, 255,  // cyan
+//     128, 0, 5, 255,   // blue
+//     192, 0, 236, 255, // cyan
+//     255, 0, 255, 60}; // green
+// DEFINE_GRADIENT_PALETTE(redyellow_gp){
+//     0, 200, 200, 200,    // white
+//     64, 255, 218, 0,     // yellow
+//     128, 231, 0, 0,      // red
+//     192, 255, 218, 0,    // yellow
+//     255, 200, 200, 200}; // white
+// CRGBPalette16 purplePal = purple_gp;
+// CRGBPalette16 outrunPal = outrun_gp;
+// CRGBPalette16 greenbluePal = greenblue_gp;
+// CRGBPalette16 heatPal = redyellow_gp;
+// uint8_t colorTimer = 0;
 
 auto timer = timer_create_default(); // create a timer with default settings
 
@@ -102,7 +145,7 @@ auto timer = timer_create_default(); // create a timer with default settings
 
 #define PANE_WIDTH PANEL_WIDTH *PANELS_NUMBER
 #define PANE_HEIGHT PANEL_HEIGHT
-#define NUM_LEDS PANE_WIDTH *PANE_HEIGHT
+// #define NUM_LEDS PANE_WIDTH *PANE_HEIGHT   
 
 uint16_t colorWheel(uint8_t pos);
 char ssid[32] = {0};
@@ -181,7 +224,6 @@ void setup(void)
   // Start the WiFi
   // WiFi.mode(WIFI_STA);
   WiFi.hostname(device);
-  // TODO Use WiFiManager to simplify WiFi connection
   strcpy((char *)ssid, WiFi.SSID().c_str());
   // WiFi.begin(ssid, password);
   Serial.println("");
@@ -194,7 +236,6 @@ void setup(void)
   }
   Serial.println("");
   Serial.print("Connected to ");
-  // TODO Print the SSID from WiFiManager
   Serial.println(ssid);
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
@@ -204,20 +245,59 @@ void setup(void)
     Serial.printf("MDNS responder started with name %s.local\n", device);
   }
 
+  // Setup for VUmeter display
+  // for WS2812B - we're using 64x32 RGB Matrix
+  // FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds[0], NUM_LEDS);
+  // Serial.begin(57600);
+
+  setupWebServer();
+  setupAudio();
+
+  if (M_WIDTH == 8)
+    numBands = 8;
+  else
+    numBands = 16;
+  barWidth = M_WIDTH / numBands;
+
+  EEPROM.begin(EEPROM_SIZE);
+
+  // It should not normally be possible to set the gain to 255
+  // If this has happened, the EEPROM has probably never been written to
+  // (new board?) so reset the values to something sane.
+  if (EEPROM.read(EEPROM_GAIN) == 255) {
+    EEPROM.write(EEPROM_BRIGHTNESS, 50);
+    EEPROM.write(EEPROM_GAIN, 0);
+    EEPROM.write(EEPROM_SQUELCH, 0);
+    EEPROM.write(EEPROM_PATTERN, 0);
+    EEPROM.write(EEPROM_DISPLAY_TIME, 10);
+    EEPROM.commit();
+  }
+
+  // Read saved values from EEPROM
+  // FastLED.setBrightness( EEPROM.read(EEPROM_BRIGHTNESS));
+  // brightness = FastLED.getBrightness();
+  gain = EEPROM.read(EEPROM_GAIN);
+  squelch = EEPROM.read(EEPROM_SQUELCH);
+  pattern = EEPROM.read(EEPROM_PATTERN);
+  displayTime = EEPROM.read(EEPROM_DISPLAY_TIME);
+
   // timer.every(2 * SECOND, readtemp);
   timer.every(0.5 * SECOND, npblink);
   timer.every(speed, display);
   timer.every(3 * SECOND, wmloop);
 
-  server.on("/", MainPage); /*Client request handling: calls the function to serve HTML page */
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+            { MainPage(request); }); /*Client request handling: calls the function to serve HTML page */
 
-  server.on("/inline", []()
-            { server.send(200, "text/plain", "this works as well"); });
+  server.on("/inline", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send(200, "text/plain", "this works as well"); });
 
-  server.on("/submit", HTTP_POST, MainPageSubmit);
+  server.on("/submit", HTTP_POST, [](AsyncWebServerRequest *request)
+            { MainPageSubmit(request); });
   // server.on("/submit", HTTP_POST, []()
 
-  server.on("/LEDupdate", LEDControl);
+  server.on("/LEDupdate", HTTP_GET, [](AsyncWebServerRequest *request)
+            { LEDControl(request); });
 
   server.onNotFound(handleNotFound);
 
@@ -261,12 +341,12 @@ void setup(void)
  *******************************/
 void loop(void)
 {
-  server.handleClient();
+  // server.handleClient();
   timer.tick();
 }
 
 /*******************************
- * Utility Functions
+ * Utility Functions - WiFi Manager
  *******************************/
 bool wmloop(void *)
 {
@@ -282,6 +362,10 @@ bool wmloop(void *)
   }
   return true;
 }
+
+/*******************************
+ * Utility Functions - URL Decode
+ *******************************/
 
 String urlDecode(String input)
 {
@@ -335,10 +419,13 @@ String urlDecode(String input)
 
   return decoded;
 }
+/*******************************
+ * Utility Functions - Display
+ *******************************/
 
 bool display(void *) // Select which display to show
 {
-  switch(current_display_type)
+  switch (current_display_type)
   {
   case DISPLAY_TEXT:
     text_display();
@@ -376,39 +463,42 @@ void vumeter_display()
   // TODO implement VU meter display
 }
 
-void handleNotFound()
+/*******************************
+ * Web Server Handlers
+ *******************************/
+void handleNotFound(AsyncWebServerRequest *request)
 {
 
   String message = "File Not Found\n\n";
   message += "URI: ";
-  message += server.uri();
+  message += request->url();
   message += "\nMethod: ";
-  message += (server.method() == HTTP_GET) ? "GET" : "POST";
+  message += (request->method() == HTTP_GET) ? "GET" : "POST";
   message += "\nArguments: ";
-  message += server.args();
+  message += request->args();
   message += "\n";
-  for (uint8_t i = 0; i < server.args(); i++)
+  for (uint8_t i = 0; i < request->args(); i++)
   {
-    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+    message += " " + request->argName(i) + ": " + request->arg(i) + "\n";
   }
-  server.send(404, "text/plain", message);
+  request->send(404, "text/plain", message);
   Serial.println(message);
 }
-void MainPage()
+void MainPage(AsyncWebServerRequest *request)
 {
-  String _html_page = html_page;             /*Read The HTML Page*/
-  server.send(200, "text/html", _html_page); /*Send the code to the web server*/
+  String _html_page = html_page;               /*Read The HTML Page*/
+  request->send(200, "text/html", _html_page); /*Send the code to the web server*/
 }
 
-void MainPageSubmit()
+void MainPageSubmit(AsyncWebServerRequest *request)
 {
 
-  String upperText = server.arg("upperText");
-  String lowerText = server.arg("lowerText");
-  String topText = server.arg("topText");
+  String upperText = request->arg("upperText");
+  String lowerText = request->arg("lowerText");
+  String topText = request->arg("topText");
 
-  speed = server.arg("speed").toInt() * 10;
-  background = server.arg("background").toInt();
+  speed = request->arg("speed").toInt() * 10;
+  background = request->arg("background").toInt();
 
   // Decode the URL-encoded strings
   String upperText2 = urlDecode(upperText);
@@ -432,7 +522,7 @@ void MainPageSubmit()
   // Serial.println(upperText2);
   // Serial.println(lowerText2);
 
-  server.send(200, "text/plain", "Messages received!");
+  request->send(200, "text/plain", "Messages received!");
 
   // Clear first, then assign with explicit std::string construction
   upper_msg.clear();
@@ -442,42 +532,40 @@ void MainPageSubmit()
   upper_msg = std::string(upperText2.c_str());
   lower_msg = std::string(lowerText2.c_str());
   top_msg = std::string(topText2.c_str());
-
-  // Serial.print("upper_msg = ");
-  // Serial.print(upper_msg.c_str());
-  // Serial.print(", lower_msg = ");
-  // Serial.println(lower_msg.c_str());
-  // Serial.println(" ***************************");
 }
 
-void LEDControl()
+void LEDControl(AsyncWebServerRequest *request)
 {
   // Stop the LED from blinking
   blink = false;
   Serial.println("LED Control activated");
   String message = "LED Control activated\n\n";
   message += "URI: ";
-  message += server.uri();
+  message += request->url();
   message += "\nMethod: ";
-  message += (server.method() == HTTP_GET) ? "GET" : "POST";
+  message += (request->method() == HTTP_GET) ? "GET" : "POST";
   message += "\nArguments: ";
-  message += server.args();
+  message += request->args();
   message += "\n";
-  for (uint8_t i = 0; i < server.args(); i++)
+  for (uint8_t i = 0; i < request->args(); i++)
   {
-    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+    message += " " + request->argName(i) + ": " + request->arg(i) + "\n";
   }
   Serial.print(message);
-  uint8_t LEDred = server.arg(0).toInt();   // Convert and read the LED red
-  uint8_t LEDgreen = server.arg(1).toInt(); // Convert and read the LED green
-  uint8_t LEDblue = server.arg(2).toInt();  // Convert and read the LED blue
+  uint8_t LEDred = request->arg("red").toInt();     // Convert and read the LED red
+  uint8_t LEDgreen = request->arg("green").toInt(); // Convert and read the LED green
+  uint8_t LEDblue = request->arg("blue").toInt();   // Convert and read the LED blue
   // theaterChase(strip.Color(LEDred, LEDgreen, LEDblue), 50); // Set the LED colour
   strip.setPixelColor(0, strip.Color(LEDred, LEDgreen, LEDblue));
   Serial.printf("Red %d, Green %d, Blue %d", LEDred, LEDgreen, LEDblue);
   strip.show();
 
-  server.send(200, "text/plane", message); // Send the LED status to the web server
+  request->send(200, "text/plane", message); // Send the LED status to the web server
 }
+
+/*******************************
+ * Utility Functions - Display
+ ********************************/
 
 //------------------------------------------------------------------------------------------------------------------
 // The layers don't draw to hardware directly, they use a callback function.
@@ -626,3 +714,7 @@ void updateBackground()
 
   gfx_layer_bg.dim(background); // darken it a little
 }
+
+/**************************
+ * VUmeter display functions
+ ***************************/
