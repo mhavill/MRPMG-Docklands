@@ -3,7 +3,7 @@
  http:://www.electronicwings.com
 */
 
-const char html_page[] PROGMEM = R"rawSrting(
+const char text_message_page_html[] PROGMEM = R"rawString(
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -225,5 +225,5 @@ const char html_page[] PROGMEM = R"rawSrting(
     </script>
 </body>
 </html>
-)rawSrting";
+)rawString";
     

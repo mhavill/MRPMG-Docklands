@@ -24,12 +24,20 @@
 #include <GFX_Layer.hpp>
 
 // Webpage
-#include "html.h"
+#include "landing_page.h"
+#include "animations_page.h" 
+#include "text_message_page.h"
+#include "vumeter_page.h"
 #include <iostream>
 #include <string>
 
 // NeoPixel
 #include "neopixel.hpp"
+
+// Filesystem
+#include "FS.h"
+#include <LittleFS.h>
+#include <AnimatedGIF.h>
 
 /*******************************
  * Protptypes
@@ -51,21 +59,25 @@ void updateBackground();
 bool display(void *);
 bool wmloop(void *);
 
+void GIFDraw(GIFDRAW *pDraw);
+void *GIFOpenFile(const char *fname, int32_t *pSize);
+void GIFCloseFile(void *pHandle);
+int32_t GIFReadFile(GIFFILE *pFile, uint8_t *pBuf, int32_t iLen);
+int32_t GIFSeekFile(GIFFILE *pFile, int32_t iPosition);
+void ShowGIF(char *name);
+
 /*******************************
  * Definitions
  *******************************/
 
-// const char *ssid = "";
-// const char *password = "";
+
 #define device "ESP32server"
 const int SECOND = 1000;
 static float tempC;
 // static DeviceAddress deviceAddress;
 // static bool waitForConversion = false;
 
-// DONE Add Code to manage LED(s)
-// DONE handle client GET
-// DONE handle client PUT/POST
+
 
 WebServer server(80);
 
@@ -102,12 +114,29 @@ auto timer = timer_create_default(); // create a timer with default settings
 #define PANE_HEIGHT PANEL_HEIGHT
 #define NUM_LEDS PANE_WIDTH *PANE_HEIGHT
 
+#define FILESYSTEM LittleFS
+#define FORMAT_LITTLEFS_IF_FAILED true
+
+#define PANEL_RES_X 64 // Number of pixels wide of each INDIVIDUAL panel module.
+#define PANEL_RES_Y 32 // Number of pixels tall of each INDIVIDUAL panel module.
+#define PANEL_CHAIN 1  // Total number of panels chained one to another horizontally only.
+
 uint16_t colorWheel(uint8_t pos);
 char ssid[32] = {0};
 
 //------------------------------------------------------------------------------------------------------------------
 
 MatrixPanel_I2S_DMA *dma_display = nullptr;
+
+uint16_t myBLACK = dma_display->color565(0, 0, 0);
+uint16_t myWHITE = dma_display->color565(255, 255, 255);
+uint16_t myRED = dma_display->color565(255, 0, 0);
+uint16_t myGREEN = dma_display->color565(0, 255, 0);
+uint16_t myBLUE = dma_display->color565(0, 0, 255);
+
+AnimatedGIF gif;
+File f;
+int x_offset, y_offset;
 
 //------------------------------------------------------------------------------------------------------------------
 
@@ -141,6 +170,12 @@ uint16_t speed = 18;
 
 // select which pin will trigger the configuration portal when set to LOW
 #define TRIGGER_PIN 33
+/****************************
+ * GIF Playback Variables
+ ****************************/
+String gifDir = "/gifs"; // play all GIFs in this directory on the SD card
+char filePath[256] = {0};
+File root, gifFile;
 
 /*******************************
  * Setup
@@ -172,7 +207,6 @@ void setup(void)
   // Start the WiFi
   // WiFi.mode(WIFI_STA);
   WiFi.hostname(device);
-  // TODO Use WiFiManager to simplify WiFi connection
   strcpy((char *)ssid, WiFi.SSID().c_str());
   // WiFi.begin(ssid, password);
   Serial.println("");
@@ -185,7 +219,6 @@ void setup(void)
   }
   Serial.println("");
   Serial.print("Connected to ");
-  // TODO Print the SSID from WiFiManager
   Serial.println(ssid);
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
@@ -195,25 +228,47 @@ void setup(void)
     Serial.printf("MDNS responder started with name %s.local\n", device);
   }
 
-  // timer.every(2 * SECOND, readtemp);
   timer.every(0.5 * SECOND, npblink);
-  timer.every(speed, display);
+  // timer.every(speed, display);
   timer.every(3 * SECOND, wmloop);
 
-  server.on("/", MainPage); /*Client request handling: calls the function to serve HTML page */
+  /***********************************
+   * Web Server Handlers
+   * ******************************/
+  server.on("/", HTTP_GET, []() {
+  // Serve landing page
+  server.send(200, "text/html", landing_page_html);
+});
 
-  server.on("/inline", []()
-            { server.send(200, "text/plain", "this works as well"); });
+server.on("/setmode", HTTP_POST, []() {
+  String mode = server.arg("mode");
+  
+  if (mode == "text") {
+    server.send(200, "text/html", text_message_page_html);
+  } else if (mode == "animations") {
+    // Start animations on display
+    server.send(200, "text/html", animations_page_html);
+  } else if (mode == "vumeter") {
+    server.send(200, "text/html", vumeter_page_html);
+  } else if (mode == "stop") {
+    // Stop current mode
+    server.send(200, "text/html", landing_page_html);
+  }
+});
+  // server.on("/", MainPage); /*Client request handling: calls the function to serve HTML page */
 
-  server.on("/submit", HTTP_POST, MainPageSubmit);
-  // server.on("/submit", HTTP_POST, []()
+  // server.on("/inline", []()
+  //           { server.send(200, "text/plain", "this works as well"); });
 
-  server.on("/LEDupdate", LEDControl);
+  // server.on("/submit", HTTP_POST, MainPageSubmit);
+  // // server.on("/submit", HTTP_POST, []()
 
-  server.onNotFound(handleNotFound);
+  // server.on("/LEDupdate", LEDControl);
 
-  server.begin();
-  Serial.println("HTTP server started");
+  // server.onNotFound(handleNotFound);
+
+  // server.begin();
+  // Serial.println("HTTP server started");
 
   Serial.println("Starting MatrixPanel_I2S_DMA test...");
   // Custom pin mapping for all pins
@@ -230,7 +285,7 @@ void setup(void)
 
   dma_display = new MatrixPanel_I2S_DMA(mxconfig);
   dma_display->begin();
-  dma_display->setBrightness8(255); // 0-255
+  dma_display->setBrightness8(128); // 0-255
   dma_display->clearScreen();
 
   // Clear the layers
@@ -240,23 +295,58 @@ void setup(void)
   gfx_layer_bg.clear();
 
   // set up initial messages
-  // TODO get SSID from WiFiManager
   lower_msg = ssid;
   upper_msg = "Is this working?";
   top_msg = "MTG";
   Serial.printf("lower_msg = %s, upper_msg = %s \n", lower_msg.c_str(), upper_msg.c_str());
+  if(!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)){
+      Serial.println("LittleFS Mount Failed");
+      return;
+  }
+  Serial.println("LittleFS Mounted Successfully");
+
+
+  // Start going through GIFS
+  gif.begin(LITTLE_ENDIAN_PIXELS);
 }
 
 /*******************************
  * Loop
  *******************************/
-// DONE Remove blocking code
+
 void loop(void)
 {
   server.handleClient();
-  // delay(2); // allow the cpu to switch to other tasks
-  timer.tick();
-  // nploop();
+
+  // while (1) // run forever
+  // {
+    timer.tick();
+
+    root = FILESYSTEM.open(gifDir);
+    if (root)
+    {
+      gifFile = root.openNextFile();
+      while (gifFile)
+      {
+        if (!gifFile.isDirectory()) // play it
+        {
+
+          // C-strings... urghh...
+          memset(filePath, 0x0, sizeof(filePath));
+          strcpy(filePath, gifFile.path());
+
+          // Show it.
+          ShowGIF(filePath);
+        }
+        gifFile.close();
+        gifFile = root.openNextFile();
+      }
+      root.close();
+    } // root
+
+    delay(1000); // pause before restarting
+
+//   } // while
 }
 
 /*******************************
@@ -272,9 +362,7 @@ bool wmloop(void *)
     // reset settings - for testing
     wm.resetSettings();
 
-
     ESP.restart();
-
   }
   return true;
 }
@@ -384,11 +472,11 @@ void handleNotFound()
   server.send(404, "text/plain", message);
   Serial.println(message);
 }
-void MainPage()
-{
-  String _html_page = html_page;             /*Read The HTML Page*/
-  server.send(200, "text/html", _html_page); /*Send the code to the web server*/
-}
+// void MainPage()
+// {
+//   String _html_page = html_page;             /*Read The HTML Page*/
+//   server.send(200, "text/html", _html_page); /*Send the code to the web server*/
+// }
 
 void MainPageSubmit()
 {
@@ -616,3 +704,170 @@ void updateBackground()
 
   gfx_layer_bg.dim(background); // darken it a little
 }
+
+/***********************
+ * Gif File Handling
+ **********************/
+// Draw a line of image directly on the LED Matrix
+void GIFDraw(GIFDRAW *pDraw)
+{
+  uint8_t *s;
+  uint16_t *d, *usPalette, usTemp[320];
+  int x, y, iWidth;
+
+  iWidth = pDraw->iWidth;
+  if (iWidth > dma_display->width())
+    iWidth = dma_display->width();
+
+  usPalette = pDraw->pPalette;
+  y = pDraw->iY + pDraw->y; // current line
+
+  s = pDraw->pPixels;
+  if (pDraw->ucDisposalMethod == 2) // restore to background color
+  {
+    for (x = 0; x < iWidth; x++)
+    {
+      if (s[x] == pDraw->ucTransparent)
+        s[x] = pDraw->ucBackground;
+    }
+    pDraw->ucHasTransparency = 0;
+  }
+  // Apply the new pixels to the main image
+  if (pDraw->ucHasTransparency) // if transparency used
+  {
+    uint8_t *pEnd, c, ucTransparent = pDraw->ucTransparent;
+    int x, iCount;
+    pEnd = s + pDraw->iWidth;
+    x = 0;
+    iCount = 0; // count non-transparent pixels
+    while (x < pDraw->iWidth)
+    {
+      c = ucTransparent - 1;
+      d = usTemp;
+      while (c != ucTransparent && s < pEnd)
+      {
+        c = *s++;
+        if (c == ucTransparent) // done, stop
+        {
+          s--; // back up to treat it like transparent
+        }
+        else // opaque
+        {
+          *d++ = usPalette[c];
+          iCount++;
+        }
+      } // while looking for opaque pixels
+      if (iCount) // any opaque pixels?
+      {
+        for (int xOffset = 0; xOffset < iCount; xOffset++)
+        {
+          dma_display->drawPixel(x + xOffset, y, usTemp[xOffset]); // 565 Color Format
+        }
+        x += iCount;
+        iCount = 0;
+      }
+      // no, look for a run of transparent pixels
+      c = ucTransparent;
+      while (c == ucTransparent && s < pEnd)
+      {
+        c = *s++;
+        if (c == ucTransparent)
+          iCount++;
+        else
+          s--;
+      }
+      if (iCount)
+      {
+        x += iCount; // skip these
+        iCount = 0;
+      }
+    }
+  }
+  else // does not have transparency
+  {
+    s = pDraw->pPixels;
+    // Translate the 8-bit pixels through the RGB565 palette (already byte reversed)
+    for (x = 0; x < pDraw->iWidth; x++)
+    {
+      dma_display->drawPixel(x, y, usPalette[*s++]); // color 565
+    }
+  }
+} /* GIFDraw() */
+
+void *GIFOpenFile(const char *fname, int32_t *pSize)
+{
+  Serial.print("Playing gif: ");
+  Serial.println(fname);
+  f = FILESYSTEM.open(fname);
+  if (f)
+  {
+    *pSize = f.size();
+    return (void *)&f;
+  }
+  return NULL;
+} /* GIFOpenFile() */
+
+void GIFCloseFile(void *pHandle)
+{
+  File *f = static_cast<File *>(pHandle);
+  if (f != NULL)
+    f->close();
+} /* GIFCloseFile() */
+
+int32_t GIFReadFile(GIFFILE *pFile, uint8_t *pBuf, int32_t iLen)
+{
+  int32_t iBytesRead;
+  iBytesRead = iLen;
+  File *f = static_cast<File *>(pFile->fHandle);
+  // Note: If you read a file all the way to the last byte, seek() stops working
+  if ((pFile->iSize - pFile->iPos) < iLen)
+    iBytesRead = pFile->iSize - pFile->iPos - 1; // <-- ugly work-around
+  if (iBytesRead <= 0)
+    return 0;
+  iBytesRead = (int32_t)f->read(pBuf, iBytesRead);
+  pFile->iPos = f->position();
+  return iBytesRead;
+} /* GIFReadFile() */
+
+int32_t GIFSeekFile(GIFFILE *pFile, int32_t iPosition)
+{
+  int i = micros();
+  File *f = static_cast<File *>(pFile->fHandle);
+  f->seek(iPosition);
+  pFile->iPos = (int32_t)f->position();
+  i = micros() - i;
+  //  Serial.printf("Seek time = %d us\n", i);
+  return pFile->iPos;
+} /* GIFSeekFile() */
+
+unsigned long start_tick = 0;
+
+void ShowGIF(char *name)
+{
+  start_tick = millis();
+
+  if (gif.open(name, GIFOpenFile, GIFCloseFile, GIFReadFile, GIFSeekFile, GIFDraw))
+  {
+    x_offset = (dma_display->width() - gif.getCanvasWidth()) / 2;
+    if (x_offset < 0)
+      x_offset = 0;
+    y_offset = (dma_display->height() - gif.getCanvasHeight()) / 2;
+    if (y_offset < 0)
+      y_offset = 0;
+    Serial.printf("Successfully opened GIF; Canvas size = %d x %d\n", gif.getCanvasWidth(), gif.getCanvasHeight());
+    Serial.flush();
+    while (gif.playFrame(true, NULL))
+    {
+      if ((millis() - start_tick) > 8000)
+      { // we'll get bored after about 8 seconds of the same looping gif
+        break;
+      }
+    }
+    gif.close();
+  }
+
+} /* ShowGIF() */
+
+/***********************
+ * End of File
+ **********************/
