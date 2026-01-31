@@ -168,6 +168,15 @@ std::string top_msg;
 uint16_t background = 10;
 uint16_t speed = 18;
 
+enum MODE
+{
+  MODE_TEXT,
+  MODE_ANIMATIONS,
+  MODE_VUMETER,
+  MODE_STOP
+} display_mode; 
+
+
 // select which pin will trigger the configuration portal when set to LOW
 #define TRIGGER_PIN 33
 /****************************
@@ -229,7 +238,7 @@ void setup(void)
   }
 
   timer.every(0.5 * SECOND, npblink);
-  // timer.every(speed, display);
+  timer.every(speed, display);
   timer.every(3 * SECOND, wmloop);
 
   /***********************************
@@ -238,6 +247,7 @@ void setup(void)
   server.on("/", HTTP_GET, []() {
   // Serve landing page
   server.send(200, "text/html", landing_page_html);
+  Serial.println("Served Landing Page");
 });
 
 server.on("/setmode", HTTP_POST, []() {
@@ -294,11 +304,14 @@ server.on("/setmode", HTTP_POST, []() {
 
   gfx_layer_bg.clear();
 
-  // set up initial messages
+  // set up initial messages & display mode
+  display_mode = MODE_TEXT; 
   lower_msg = ssid;
   upper_msg = "Is this working?";
   top_msg = "MTG";
   Serial.printf("lower_msg = %s, upper_msg = %s \n", lower_msg.c_str(), upper_msg.c_str());
+
+// Initialize LittleFS
   if(!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)){
       Serial.println("LittleFS Mount Failed");
       return;
@@ -306,8 +319,10 @@ server.on("/setmode", HTTP_POST, []() {
   Serial.println("LittleFS Mounted Successfully");
 
 
-  // Start going through GIFS
-  gif.begin(LITTLE_ENDIAN_PIXELS);
+
+
+  // // Start going through GIFS
+  // gif.begin(LITTLE_ENDIAN_PIXELS);
 }
 
 /*******************************
@@ -322,29 +337,29 @@ void loop(void)
   // {
     timer.tick();
 
-    root = FILESYSTEM.open(gifDir);
-    if (root)
-    {
-      gifFile = root.openNextFile();
-      while (gifFile)
-      {
-        if (!gifFile.isDirectory()) // play it
-        {
+    // root = FILESYSTEM.open(gifDir);
+    // if (root)
+    // {
+    //   gifFile = root.openNextFile();
+    //   while (gifFile)
+    //   {
+    //     if (!gifFile.isDirectory()) // play it
+    //     {
 
-          // C-strings... urghh...
-          memset(filePath, 0x0, sizeof(filePath));
-          strcpy(filePath, gifFile.path());
+    //       // C-strings... urghh...
+    //       memset(filePath, 0x0, sizeof(filePath));
+    //       strcpy(filePath, gifFile.path());
 
-          // Show it.
-          ShowGIF(filePath);
-        }
-        gifFile.close();
-        gifFile = root.openNextFile();
-      }
-      root.close();
-    } // root
+    //       // Show it.
+    //       ShowGIF(filePath);
+    //     }
+    //     gifFile.close();
+    //     gifFile = root.openNextFile();
+    //   }
+    //   root.close();
+    // } // root
 
-    delay(1000); // pause before restarting
+    // delay(1000); // pause before restarting
 
 //   } // while
 }
@@ -452,7 +467,7 @@ bool display(void *)
   timer.every(100 / speed, display);
   return true;
 }
-// DONE Change to Neopixel
+
 
 void handleNotFound()
 {
