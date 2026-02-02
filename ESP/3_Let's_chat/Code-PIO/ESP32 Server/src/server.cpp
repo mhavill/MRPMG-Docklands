@@ -25,7 +25,7 @@
 
 // Webpage
 #include "landing_page.h"
-#include "animations_page.h" 
+#include "animations_page.h"
 #include "text_message_page.h"
 #include "vumeter_page.h"
 #include <iostream>
@@ -56,8 +56,10 @@ void printTextRainbowCentered(int colorWheelOffset, const char *text, int yPos);
 void scrollText(int colorWheelOffset, const char *text);
 void drawTextCentered(int colorWheelOffset, const char *text, int yPos);
 void updateBackground();
-bool display(void *);
+bool display_text(void *);
+bool display_animations(void *);
 bool wmloop(void *);
+bool server_client_handler(void *);
 
 void GIFDraw(GIFDRAW *pDraw);
 void *GIFOpenFile(const char *fname, int32_t *pSize);
@@ -70,14 +72,11 @@ void ShowGIF(char *name);
  * Definitions
  *******************************/
 
-
 #define device "ESP32server"
 const int SECOND = 1000;
 static float tempC;
 // static DeviceAddress deviceAddress;
 // static bool waitForConversion = false;
-
-
 
 WebServer server(80);
 
@@ -174,8 +173,7 @@ enum MODE
   MODE_ANIMATIONS,
   MODE_VUMETER,
   MODE_STOP
-} display_mode; 
-
+} display_mode;
 
 // select which pin will trigger the configuration portal when set to LOW
 #define TRIGGER_PIN 33
@@ -238,47 +236,77 @@ void setup(void)
   }
 
   timer.every(0.5 * SECOND, npblink);
-  timer.every(speed, display);
+  timer.in(speed, display_text);
   timer.every(3 * SECOND, wmloop);
+  timer.every(10, server_client_handler);
 
   /***********************************
    * Web Server Handlers
    * ******************************/
-  server.on("/", HTTP_GET, []() {
+  server.on("/", HTTP_GET, []()
+            {
   // Serve landing page
   server.send(200, "text/html", landing_page_html);
-  Serial.println("Served Landing Page");
-});
+  Serial.println("Served Landing Page"); });
 
-server.on("/setmode", HTTP_POST, []() {
+  server.on("/setmode", HTTP_POST, []()
+            {
   String mode = server.arg("mode");
   
-  if (mode == "text") {
+  if (mode == "text") 
+  {
+    display_mode = MODE_TEXT;
     server.send(200, "text/html", text_message_page_html);
-  } else if (mode == "animations") {
+    Serial.println("Served Text Message Page");
+  } 
+  else if (mode == "animations") 
+  {
     // Start animations on display
+    display_mode = MODE_ANIMATIONS;
+    // Start going through GIFS
+    gif.begin(LITTLE_ENDIAN_PIXELS);
+    gifFile = root.openNextFile();
     server.send(200, "text/html", animations_page_html);
-  } else if (mode == "vumeter") {
+    Serial.println("Served Animations Page");
+  } 
+  else if (mode == "vumeter") 
+  {
+    display_mode = MODE_VUMETER;
     server.send(200, "text/html", vumeter_page_html);
-  } else if (mode == "stop") {
+    Serial.println("Served VU Meter Page"); 
+  } 
+  else if (mode == "stop") 
+  {
     // Stop current mode
+    display_mode = MODE_STOP;
     server.send(200, "text/html", landing_page_html);
-  }
-});
+    Serial.println("Served Landing Page after STOP");
+  } 
+  else 
+  {
+    server.send(400, "text/plain", "Invalid mode");
+    Serial.println("Invalid mode received");
+  } });
   // server.on("/", MainPage); /*Client request handling: calls the function to serve HTML page */
 
   // server.on("/inline", []()
   //           { server.send(200, "text/plain", "this works as well"); });
 
-  // server.on("/submit", HTTP_POST, MainPageSubmit);
-  // // server.on("/submit", HTTP_POST, []()
+  server.on("/submit", HTTP_POST, MainPageSubmit);
+  // server.on("/submit", HTTP_POST, []()
 
-  // server.on("/LEDupdate", LEDControl);
+  server.on("/LEDupdate", LEDControl);
 
-  // server.onNotFound(handleNotFound);
+  server.onNotFound(handleNotFound);
+  /***************************
+   * Start Web Server
+   * ***************************/
+  server.begin();
+  Serial.println("HTTP server started");
 
-  // server.begin();
-  // Serial.println("HTTP server started");
+  /***********************************
+   * Initialize Display
+   * ******************************/
 
   Serial.println("Starting MatrixPanel_I2S_DMA test...");
   // Custom pin mapping for all pins
@@ -305,24 +333,21 @@ server.on("/setmode", HTTP_POST, []() {
   gfx_layer_bg.clear();
 
   // set up initial messages & display mode
-  display_mode = MODE_TEXT; 
+  display_mode = MODE_TEXT;
   lower_msg = ssid;
-  upper_msg = "Is this working?";
-  top_msg = "MTG";
+  upper_msg = " Melbourne Tech Guilds!  Please register now and enjoy the event. ";
+  top_msg = "Welcome to";
   Serial.printf("lower_msg = %s, upper_msg = %s \n", lower_msg.c_str(), upper_msg.c_str());
 
-// Initialize LittleFS
-  if(!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)){
-      Serial.println("LittleFS Mount Failed");
-      return;
+  /*******************
+   * Initialize LittleFS
+   ******************/
+  if (!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED))
+  {
+    Serial.println("LittleFS Mount Failed");
+    return;
   }
   Serial.println("LittleFS Mounted Successfully");
-
-
-
-
-  // // Start going through GIFS
-  // gif.begin(LITTLE_ENDIAN_PIXELS);
 }
 
 /*******************************
@@ -331,42 +356,69 @@ server.on("/setmode", HTTP_POST, []() {
 
 void loop(void)
 {
-  server.handleClient();
+  timer.tick();
+  switch (display_mode)
+  {
+  case MODE_TEXT:
+    // handled in display() timer
+    timer.in(speed, display_text);
+    break;
+  case MODE_ANIMATIONS:
+    timer.in(1 * SECOND, display_animations);
 
-  // while (1) // run forever
-  // {
-    timer.tick();
-
-    // root = FILESYSTEM.open(gifDir);
-    // if (root)
-    // {
-    //   gifFile = root.openNextFile();
-    //   while (gifFile)
-    //   {
-    //     if (!gifFile.isDirectory()) // play it
-    //     {
-
-    //       // C-strings... urghh...
-    //       memset(filePath, 0x0, sizeof(filePath));
-    //       strcpy(filePath, gifFile.path());
-
-    //       // Show it.
-    //       ShowGIF(filePath);
-    //     }
-    //     gifFile.close();
-    //     gifFile = root.openNextFile();
-    //   }
-    //   root.close();
-    // } // root
-
-    // delay(1000); // pause before restarting
-
-//   } // while
+    break;
+  case MODE_VUMETER:
+    // handled in display() timer
+    break;
+  case MODE_STOP:
+    // Do nothing
+    break;
+  }
 }
 
 /*******************************
  * Utility Functions
  *******************************/
+bool display_animations(void *)
+{
+  if (display_mode != MODE_ANIMATIONS)
+    return true; // exit if mode changed
+  server.handleClient();
+  timer.in(100, display_animations);
+
+  // Play all GIFs in the gifs directory
+  root = FILESYSTEM.open(gifDir);
+  if (root)
+  {
+    gifFile = root.openNextFile();
+    while (gifFile)
+    {
+      if (!gifFile.isDirectory()) // play it
+      {
+        // C-strings... urghh...
+        memset(filePath, 0x0, sizeof(filePath));
+        strcpy(filePath, gifFile.path());
+
+        // Show it.
+        ShowGIF(filePath);
+      }
+      gifFile.close();
+      server.handleClient();
+      if (display_mode != MODE_ANIMATIONS)
+        return true; // exit if mode changed
+      gifFile = root.openNextFile();
+    }
+    root.close();
+  } // root
+  return true;
+}
+
+bool server_client_handler(void *)
+{
+  server.handleClient();
+  return true;
+}
+
 bool wmloop(void *)
 {
   // is configuration portal requested?
@@ -388,20 +440,9 @@ String urlDecode(String input)
   char a, b;
   unsigned int len = input.length();
 
-  // Serial.println("=== Starting URL Decode ===");
-  // Serial.print("Input length: ");
-  // Serial.println(len);
-  // DON'T print the whole string at once - it might be corrupted
-
   for (unsigned int i = 0; i < len; i++)
   {
     char c = input[i];
-
-    // Print each character carefully
-    // Serial.print("Pos ");
-    // Serial.print(i);
-    // Serial.print(": ");
-    // Serial.println((int)c);
 
     if (c == '+')
     {
@@ -448,8 +489,9 @@ String urlDecode(String input)
   return decoded;
 }
 
-bool display(void *)
+bool display_text(void *)
 {
+  timer.in(speed, display_text); // re-schedule next display update
   updateBackground();
   scrollText(wheelval, upper_msg.c_str());                   // Prints Scrolling text with a rainbow color
   printTextRainbowCentered(wheelval, lower_msg.c_str(), 25); // Prints text X-Centered to chosen Y position with rainbow color
@@ -464,10 +506,9 @@ bool display(void *)
 
   wheelval += 1;
   // update timer interval in case it changed
-  timer.every(100 / speed, display);
+  timer.in(100 / speed, display_text);
   return true;
 }
-
 
 void handleNotFound()
 {
@@ -521,10 +562,6 @@ void MainPageSubmit()
   Serial.print("Received background: ");
   Serial.println(background);
 
-  // // Now use upperText and lowerText - they should have the correct characters
-  // Serial.println(upperText2);
-  // Serial.println(lowerText2);
-
   server.send(200, "text/plain", "Messages received!");
 
   // Clear first, then assign with explicit std::string construction
@@ -535,12 +572,6 @@ void MainPageSubmit()
   upper_msg = std::string(upperText2.c_str());
   lower_msg = std::string(lowerText2.c_str());
   top_msg = std::string(topText2.c_str());
-
-  // Serial.print("upper_msg = ");
-  // Serial.print(upper_msg.c_str());
-  // Serial.print(", lower_msg = ");
-  // Serial.println(lower_msg.c_str());
-  // Serial.println(" ***************************");
 }
 
 void LEDControl()

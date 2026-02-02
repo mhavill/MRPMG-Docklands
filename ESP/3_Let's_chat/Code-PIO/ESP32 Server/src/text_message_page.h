@@ -157,13 +157,13 @@ const char text_message_page_html[] PROGMEM = R"rawString(
         <form action="http://ESP32server.local/submit" method="POST" accept-charset="ISO-8859-1">
             <div class="form-group">
                 <label for="topText">Top Text Message</label>
-                <input type="text" id="topText" name="topText" maxlength="11" value="MTG" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <input type="text" id="topText" name="topText" maxlength="11" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 <div class="char-count"><span id="topCount">0</span>/11</div>
             </div>
             
             <div class="form-group">
                 <label for="upperText">Upper Text Message</label>
-                <input type="text" id="upperText" name="upperText" maxlength="100" value="Is this working?" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <input type="text" id="upperText" name="upperText" maxlength="100" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 <div class="char-count"><span id="upperCount">0</span>/100</div>
             </div>
             
@@ -176,16 +176,21 @@ const char text_message_page_html[] PROGMEM = R"rawString(
             <div class="number-inputs">
                 <div class="form-group">
                     <label for="speed">Speed</label>
-                    <input type="number" id="speed" name="speed" min="1" max="100" value="1" required>
+                    <input type="number" id="speed" name="speed" min="1" max="100" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="background">Background</label>
-                    <input type="number" id="background" name="background" min="1" max="100" value="1" required>
+                    <input type="number" id="background" name="background" min="1" max="100" required>
                 </div>
             </div>
             
             <button type="submit">Submit Messages</button>
+        </form>
+        
+        <form action="/setmode" method="POST" style="margin-top: 20px;">
+            <input type="hidden" name="mode" value="stop">
+            <button type="submit" style="background: #e53e3e;">⬛ STOP & Return to Menu</button>
         </form>
     </div>
     
@@ -226,4 +231,3 @@ const char text_message_page_html[] PROGMEM = R"rawString(
 </body>
 </html>
 )rawString";
-    
