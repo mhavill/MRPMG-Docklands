@@ -46,6 +46,8 @@
 void handleNotFound();
 void setup();
 void loop();
+void handleVUMeter();
+void handleVUMeterUpdate();
 String urlDecode(String input);
 void MainPage();
 void MainPageSubmit();
@@ -58,6 +60,7 @@ void drawTextCentered(int colorWheelOffset, const char *text, int yPos);
 void updateBackground();
 bool display_text(void *);
 bool display_animations(void *);
+bool updateVUmeter(void *);
 bool wmloop(void *);
 bool server_client_handler(void *);
 
@@ -184,6 +187,14 @@ String gifDir = "/gifs"; // play all GIFs in this directory on the SD card
 char filePath[256] = {0};
 File root, gifFile;
 
+// Global variables for VU meter settings
+int displayTime = 10;
+int brightness = 128;
+int gain = 10;
+int squelch = 5;
+int pattern = 0;
+bool autoChangePatterns = false;
+
 /*******************************
  * Setup
  *******************************/
@@ -237,6 +248,7 @@ void setup(void)
 
   timer.every(0.5 * SECOND, npblink);
   timer.in(speed, display_text);
+  timer.in(1 * SECOND, updateVUmeter);
   timer.every(3 * SECOND, wmloop);
   timer.every(10, server_client_handler);
 
@@ -298,6 +310,17 @@ void setup(void)
   server.on("/LEDupdate", LEDControl);
 
   server.onNotFound(handleNotFound);
+
+
+
+
+    // ... existing setup code ...
+
+    server.on("/vumeter", HTTP_GET, handleVUMeter);
+    server.on("/vuupdate", HTTP_POST, handleVUMeterUpdate);
+
+    // ... rest of your routes ...
+ 
   /***************************
    * Start Web Server
    * ***************************/
@@ -368,6 +391,7 @@ void loop(void)
 
     break;
   case MODE_VUMETER:
+
     // handled in display() timer
     break;
   case MODE_STOP:
@@ -379,6 +403,80 @@ void loop(void)
 /*******************************
  * Utility Functions
  *******************************/
+bool updateVUmeter(void *)
+{
+  // Update VU meter display through Input FFT 
+  timer.in(20, updateVUmeter);
+
+  return true;
+}
+
+  // Handle VU meter page GET request
+  void handleVUMeter()
+  {
+    String html = FPSTR(vumeter_page_html); // Your VU meter HTML
+
+    // Replace placeholders
+    html.replace("%DISPLAYTIME%", String(displayTime));
+    html.replace("%BRIGHTNESSVALUE%", String(brightness));
+    html.replace("%GAINVALUE%", String(gain));
+    html.replace("%SQUELCHVALUE%", String(squelch));
+
+    server.send(200, "text/html", html);
+  }
+
+  // Handle VU meter control updates
+  void handleVUMeterUpdate()
+  {
+    if (server.hasArg("cmd"))
+    {
+      String cmd = server.arg("cmd");
+      char dataType = cmd.charAt(0);
+      String dataValue = cmd.substring(1);
+
+      switch (dataType)
+      {
+      case 't':
+        displayTime = dataValue.toInt();
+        Serial.printf("Display time: %d\n", displayTime);
+        break;
+      case 'b':
+        brightness = dataValue.toInt();
+        Serial.printf("Brightness: %d\n", brightness);
+        break;
+      case 'g':
+        gain = dataValue.toInt();
+        Serial.printf("Gain: %d\n", gain);
+        break;
+      case 's':
+        squelch = dataValue.toInt();
+        Serial.printf("Squelch: %d\n", squelch);
+        break;
+      case 'n':
+        pattern = (pattern + 1) % 6;
+        Serial.printf("Pattern: %d\n", pattern);
+        break;
+      case 'a':
+        autoChangePatterns = !autoChangePatterns;
+        Serial.printf("Auto patterns: %d\n", autoChangePatterns);
+        break;
+      }
+    }
+
+    // Send back current state as JSON
+    String response = "{";
+    response += "\"displayTime\":" + String(displayTime) + ",";
+    response += "\"brightness\":" + String(brightness) + ",";
+    response += "\"gain\":" + String(gain) + ",";
+    response += "\"squelch\":" + String(squelch) + ",";
+    response += "\"auto\":" + String(autoChangePatterns ? "true" : "false");
+    response += "}";
+
+    server.send(200, "application/json", response);
+  }
+
+
+
 bool display_animations(void *)
 {
   if (display_mode != MODE_ANIMATIONS)

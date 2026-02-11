@@ -64,61 +64,77 @@ const char vumeter_page_html[] PROGMEM = R"rawSrting(
   </form>
 
 <script>
- var gateway = `ws://${window.location.hostname}/ws`;
-  var websocket;
+  var updateInterval;
+  
   window.addEventListener('load', onLoad);
   
-  function initWebSocket() {
-    console.log('Trying to open a WebSocket connection...');
-    websocket = new WebSocket(gateway);
-    websocket.onopen    = onOpen;
-    websocket.onclose   = onClose;
-    websocket.onmessage = onMessage;
-  }
-  
-  function onOpen(event) {
-    console.log('Connection opened');
-  }
-  
-  function onClose(event) {
-    console.log('Connection closed');
-    setTimeout(initWebSocket, 2000);
-  }
-  
-  function onMessage(event) {
-    var dataType = event.data.charAt(0);
-    var dataValue = event.data.substring(1);
-    switch (dataType){
-    case 't':
-      document.getElementById('displayTime').value = dataValue;
-      break;
-    case 'b':
-      document.getElementById('brightnessValue').innerHTML = dataValue;
-      document.getElementById('brightnessSlider').value = dataValue;
-      break;
-    case 'g':
-      document.getElementById('gainValue').innerHTML = dataValue;
-      document.getElementById('gainSlider').value = dataValue;
-      break;
-    case 's':
-      document.getElementById('squelchValue').innerHTML = dataValue;
-      document.getElementById('squelchSlider').value = dataValue;
-      break;
-    case 'a':
-      if (dataValue == '1') document.getElementById('autoBtn').style.backgroundColor = '#baffb3';
-      else document.getElementById('autoBtn').style.backgroundColor = '';
-      break;
-    }
-  }
-  
   function onLoad(event) {
-    initWebSocket();
+    console.log('Page loaded, starting polling');
+    // Poll for updates every 1 second
+    updateInterval = setInterval(pollServerState, 1000);
+  }
+  
+  // Poll server for current state
+  function pollServerState() {
+    fetch('/vuupdate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'cmd=poll'
+    })
+    .then(response => response.json())
+    .then(data => {
+      // Update UI with server values
+      document.getElementById('displayTime').value = data.displayTime;
+      document.getElementById('brightnessValue').innerHTML = data.brightness;
+      document.getElementById('brightnessSlider').value = data.brightness;
+      document.getElementById('gainValue').innerHTML = data.gain;
+      document.getElementById('gainSlider').value = data.gain;
+      document.getElementById('squelchValue').innerHTML = data.squelch;
+      document.getElementById('squelchSlider').value = data.squelch;
+      
+      // Update auto button appearance
+      if (data.auto) {
+        document.getElementById('autoBtn').style.backgroundColor = '#baffb3';
+      } else {
+        document.getElementById('autoBtn').style.backgroundColor = '';
+      }
+    })
+    .catch(error => console.error('Polling error:', error));
   }
 
   function sendData(type, val) {
-    console.log(type+val);
-    websocket.send(type+val);
+    var cmd = type + val;
+    console.log('Sending: ' + cmd);
+    
+    fetch('/vuupdate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'cmd=' + encodeURIComponent(cmd)
+    })
+    .then(response => response.json())
+    .then(data => {
+      // Update UI immediately with response
+      document.getElementById('displayTime').value = data.displayTime;
+      document.getElementById('brightnessValue').innerHTML = data.brightness;
+      document.getElementById('brightnessSlider').value = data.brightness;
+      document.getElementById('gainValue').innerHTML = data.gain;
+      document.getElementById('gainSlider').value = data.gain;
+      document.getElementById('squelchValue').innerHTML = data.squelch;
+      document.getElementById('squelchSlider').value = data.squelch;
+      
+      if (data.auto) {
+        document.getElementById('autoBtn').style.backgroundColor = '#baffb3';
+      } else {
+        document.getElementById('autoBtn').style.backgroundColor = '';
+      }
+    })
+    .catch(error => console.error('Send error:', error));
   }
+  
+  // Clean up when leaving page
+  window.addEventListener('beforeunload', function() {
+    if (updateInterval) clearInterval(updateInterval);
+  });
 </script>
 </body>
 </html>
