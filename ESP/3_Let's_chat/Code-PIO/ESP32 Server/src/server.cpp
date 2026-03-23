@@ -31,6 +31,14 @@
 #include <iostream>
 #include <string>
 
+// VU Meter and Audio Reactive
+#include "audio_reactive.h"
+// #include <FastLED.h>
+// #include <LEDMatrix.h>
+#include <LEDText.h>
+#include <FontMatrise.h>
+#include <EEPROM.h>
+
 // NeoPixel
 #include "neopixel.hpp"
 
@@ -63,6 +71,8 @@ bool display_animations(void *);
 bool updateVUmeter(void *);
 bool wmloop(void *);
 bool server_client_handler(void *);
+bool decayPeak(void *);
+bool updateEEPROM(void *);
 
 void GIFDraw(GIFDRAW *pDraw);
 void *GIFOpenFile(const char *fname, int32_t *pSize);
@@ -70,6 +80,18 @@ void GIFCloseFile(void *pHandle);
 int32_t GIFReadFile(GIFFILE *pFile, uint8_t *pBuf, int32_t iLen);
 int32_t GIFSeekFile(GIFFILE *pFile, int32_t iPosition);
 void ShowGIF(char *name);
+
+// VU meter prototypes
+void drawPatterns(uint8_t band);
+void showIP();
+void rainbowBars(uint8_t band, uint8_t barHeight);
+void purpleBars(int band, int barHeight);
+void centerBars(int band, int barHeight);
+void changingBars(int band, int barHeight);
+void whitePeak(int band);
+void outrunPeak(int band);
+void createWaterfall(int band);
+void moveWaterfall();
 
 /*******************************
  * Definitions
@@ -125,6 +147,26 @@ auto timer = timer_create_default(); // create a timer with default settings
 
 uint16_t colorWheel(uint8_t pos);
 char ssid[32] = {0};
+
+// VU Meter definitions
+#define EEPROM_SIZE 5
+#define LED_PIN 2
+#define M_WIDTH 16
+#define M_HEIGHT 16
+#define NUM_LEDS (M_WIDTH * M_HEIGHT)
+
+#define EEPROM_BRIGHTNESS 0
+#define EEPROM_GAIN 1
+#define EEPROM_SQUELCH 2
+#define EEPROM_PATTERN 3
+#define EEPROM_DISPLAY_TIME 4
+
+uint8_t numBands;
+uint8_t barWidth;
+uint8_t pattern;
+uint8_t brightness;
+uint16_t displayTime;
+bool autoChangePatterns = false;
 
 //------------------------------------------------------------------------------------------------------------------
 
@@ -195,6 +237,37 @@ int squelch = 5;
 int pattern = 0;
 bool autoChangePatterns = false;
 
+uint8_t peak[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+uint8_t prevFFTValue[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+uint8_t barHeights[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+// Colors and palettes
+DEFINE_GRADIENT_PALETTE(purple_gp){
+    0, 0, 212, 255,    // blue
+    255, 179, 0, 255}; // purple
+DEFINE_GRADIENT_PALETTE(outrun_gp){
+    0, 141, 0, 100,   // purple
+    127, 255, 192, 0, // yellow
+    255, 0, 5, 255};  // blue
+DEFINE_GRADIENT_PALETTE(greenblue_gp){
+    0, 0, 255, 60,    // green
+    64, 0, 236, 255,  // cyan
+    128, 0, 5, 255,   // blue
+    192, 0, 236, 255, // cyan
+    255, 0, 255, 60}; // green
+DEFINE_GRADIENT_PALETTE(redyellow_gp){
+    0, 200, 200, 200,    // white
+    64, 255, 218, 0,     // yellow
+    128, 231, 0, 0,      // red
+    192, 255, 218, 0,    // yellow
+    255, 200, 200, 200}; // white
+CRGBPalette16 purplePal = purple_gp;
+CRGBPalette16 outrunPal = outrun_gp;
+CRGBPalette16 greenbluePal = greenblue_gp;
+CRGBPalette16 heatPal = redyellow_gp;
+uint8_t colorTimer = 0;
+uint8_t divisor = 1; // If 8 bands, we need to divide things by 2
+
 /*******************************
  * Setup
  *******************************/
@@ -245,12 +318,14 @@ void setup(void)
   {
     Serial.printf("MDNS responder started with name %s.local\n", device);
   }
-
+  // Set up timers for display and web server
   timer.every(0.5 * SECOND, npblink);
   timer.in(speed, display_text);
   timer.in(1 * SECOND, updateVUmeter);
   timer.every(3 * SECOND, wmloop);
   timer.every(10, server_client_handler);
+  timer.every(60, decayPeak);
+  timer.every(30 * SECOND, updateEEPROM);
 
   /***********************************
    * Web Server Handlers
@@ -299,10 +374,6 @@ void setup(void)
     server.send(400, "text/plain", "Invalid mode");
     Serial.println("Invalid mode received");
   } });
-  // server.on("/", MainPage); /*Client request handling: calls the function to serve HTML page */
-
-  // server.on("/inline", []()
-  //           { server.send(200, "text/plain", "this works as well"); });
 
   server.on("/submit", HTTP_POST, MainPageSubmit);
   // server.on("/submit", HTTP_POST, []()
@@ -311,16 +382,10 @@ void setup(void)
 
   server.onNotFound(handleNotFound);
 
+  // VU Meter routes
+  server.on("/vumeter", HTTP_GET, handleVUMeter);
+  server.on("/vuupdate", HTTP_POST, handleVUMeterUpdate);
 
-
-
-    // ... existing setup code ...
-
-    server.on("/vumeter", HTTP_GET, handleVUMeter);
-    server.on("/vuupdate", HTTP_POST, handleVUMeterUpdate);
-
-    // ... rest of your routes ...
- 
   /***************************
    * Start Web Server
    * ***************************/
@@ -405,77 +470,157 @@ void loop(void)
  *******************************/
 bool updateVUmeter(void *)
 {
-  // Update VU meter display through Input FFT 
+  // Update VU meter display through Input FFT
   timer.in(20, updateVUmeter);
+  if (pattern != 5)
+    // TODO Replace FastLED
+    // FastLED.clear();
+
+    uint8_t divisor = 1; // If 8 bands, we need to divide things by 2
+  if (numBands == 8)
+    divisor = 2; // and average each pair of bands together
+
+  for (int i = 0; i < 16; i += divisor)
+  {
+    uint8_t fftValue;
+
+    if (numBands == 8)
+      fftValue = (fftResult[i] + fftResult[i + 1]) / 2; // Average every two bands if numBands = 8
+    else
+      fftValue = fftResult[i];
+
+    fftValue = ((prevFFTValue[i / divisor] * 3) + fftValue) / 4; // Dirty rolling average between frames to reduce flicker
+    barHeights[i / divisor] = fftValue / (255 / M_HEIGHT);       // Scale bar height
+
+    if (barHeights[i / divisor] > peak[i / divisor]) // Move peak up
+      peak[i / divisor] = min(M_HEIGHT, (int)barHeights[i / divisor]);
+
+    prevFFTValue[i / divisor] = fftValue; // Save prevFFTValue for averaging later
+  }
+
+  // Draw the patterns
+  for (int band = 0; band < numBands; band++)
+  {
+    drawPatterns(band);
+  }
+
+  // Decay peak
+  // TODO set up timer
+  // EVERY_N_MILLISECONDS(60)
+  {
+    for (uint8_t band = 0; band < numBands; band++)
+      if (peak[band] > 0)
+        peak[band] -= 1;
+  }
+  // TODO set up timer
+  // EVERY_N_SECONDS(30)
+  {
+    // Save values in EEPROM. Will only be commited if values have changed.
+    EEPROM.write(EEPROM_BRIGHTNESS, brightness);
+    EEPROM.write(EEPROM_GAIN, gain);
+    EEPROM.write(EEPROM_SQUELCH, squelch);
+    EEPROM.write(EEPROM_PATTERN, pattern);
+    EEPROM.write(EEPROM_DISPLAY_TIME, displayTime);
+    EEPROM.commit();
+  }
+  // TODO set up timer
+  // EVERY_N_SECONDS_I(timingObj, displayTime)
+  {
+    // timingObj.setPeriod(displayTime);
+    if (autoChangePatterns)
+      pattern = (pattern + 1) % 6;
+  }
+  // TODO Replace FastLED
+  // FastLED.setBrightness(brightness);
+  // FastLED.show();
+
+  // ws.cleanupClients();
 
   return true;
 }
 
-  // Handle VU meter page GET request
-  void handleVUMeter()
+bool decayPeak(void *)
+{
+  for (uint8_t band = 0; band < numBands; band++)
+    if (peak[band] > 0)
+      peak[band] -= 1;
+  return true;
+}
+bool updateEEPROM(void *)
+{
+  // Save values in EEPROM. Will only be commited if values have changed.
+  EEPROM.write(EEPROM_BRIGHTNESS, brightness);
+  EEPROM.write(EEPROM_GAIN, gain);
+  EEPROM.write(EEPROM_SQUELCH, squelch);
+  EEPROM.write(EEPROM_PATTERN, pattern);
+  EEPROM.write(EEPROM_DISPLAY_TIME, displayTime);
+  EEPROM.commit();
+  return true;
+}
+
+// Handle VU meter page GET request
+void handleVUMeter()
+{
+  String html = FPSTR(vumeter_page_html); // Your VU meter HTML
+
+  // Replace placeholders
+  html.replace("%DISPLAYTIME%", String(displayTime));
+  html.replace("%BRIGHTNESSVALUE%", String(brightness));
+  html.replace("%GAINVALUE%", String(gain));
+  html.replace("%SQUELCHVALUE%", String(squelch));
+
+  server.send(200, "text/html", html);
+}
+
+// Handle VU meter control updates
+void handleVUMeterUpdate()
+{
+  if (server.hasArg("cmd"))
   {
-    String html = FPSTR(vumeter_page_html); // Your VU meter HTML
+    String cmd = server.arg("cmd");
+    char dataType = cmd.charAt(0);
+    String dataValue = cmd.substring(1);
 
-    // Replace placeholders
-    html.replace("%DISPLAYTIME%", String(displayTime));
-    html.replace("%BRIGHTNESSVALUE%", String(brightness));
-    html.replace("%GAINVALUE%", String(gain));
-    html.replace("%SQUELCHVALUE%", String(squelch));
-
-    server.send(200, "text/html", html);
-  }
-
-  // Handle VU meter control updates
-  void handleVUMeterUpdate()
-  {
-    if (server.hasArg("cmd"))
+    switch (dataType)
     {
-      String cmd = server.arg("cmd");
-      char dataType = cmd.charAt(0);
-      String dataValue = cmd.substring(1);
-
-      switch (dataType)
-      {
-      case 't':
-        displayTime = dataValue.toInt();
-        Serial.printf("Display time: %d\n", displayTime);
-        break;
-      case 'b':
-        brightness = dataValue.toInt();
-        Serial.printf("Brightness: %d\n", brightness);
-        break;
-      case 'g':
-        gain = dataValue.toInt();
-        Serial.printf("Gain: %d\n", gain);
-        break;
-      case 's':
-        squelch = dataValue.toInt();
-        Serial.printf("Squelch: %d\n", squelch);
-        break;
-      case 'n':
-        pattern = (pattern + 1) % 6;
-        Serial.printf("Pattern: %d\n", pattern);
-        break;
-      case 'a':
-        autoChangePatterns = !autoChangePatterns;
-        Serial.printf("Auto patterns: %d\n", autoChangePatterns);
-        break;
-      }
+    case 't':
+      displayTime = dataValue.toInt();
+      Serial.printf("Display time: %d\n", displayTime);
+      break;
+    case 'b':
+      brightness = dataValue.toInt();
+      Serial.printf("Brightness: %d\n", brightness);
+      break;
+    case 'g':
+      gain = dataValue.toInt();
+      Serial.printf("Gain: %d\n", gain);
+      break;
+    case 's':
+      squelch = dataValue.toInt();
+      Serial.printf("Squelch: %d\n", squelch);
+      break;
+    case 'n':
+      pattern = (pattern + 1) % 6;
+      Serial.printf("Pattern: %d\n", pattern);
+      break;
+    case 'a':
+      autoChangePatterns = !autoChangePatterns;
+      Serial.printf("Auto patterns: %d\n", autoChangePatterns);
+      break;
     }
-
-    // Send back current state as JSON
-    String response = "{";
-    response += "\"displayTime\":" + String(displayTime) + ",";
-    response += "\"brightness\":" + String(brightness) + ",";
-    response += "\"gain\":" + String(gain) + ",";
-    response += "\"squelch\":" + String(squelch) + ",";
-    response += "\"auto\":" + String(autoChangePatterns ? "true" : "false");
-    response += "}";
-
-    server.send(200, "application/json", response);
   }
 
+  // Send back current state as JSON
+  String response = "{";
+  response += "\"displayTime\":" + String(displayTime) + ",";
+  response += "\"brightness\":" + String(brightness) + ",";
+  response += "\"gain\":" + String(gain) + ",";
+  response += "\"squelch\":" + String(squelch) + ",";
+  response += "\"auto\":" + String(autoChangePatterns ? "true" : "false");
+  response += "}";
 
+  server.send(200, "application/json", response);
+}
 
 bool display_animations(void *)
 {
