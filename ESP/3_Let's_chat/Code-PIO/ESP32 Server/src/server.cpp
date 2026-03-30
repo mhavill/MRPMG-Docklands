@@ -229,13 +229,14 @@ String gifDir = "/gifs"; // play all GIFs in this directory on the SD card
 char filePath[256] = {0};
 File root, gifFile;
 
+// TODO Resolve following block
 // Global variables for VU meter settings
-int displayTime = 10;
-int brightness = 128;
-int gain = 10;
-int squelch = 5;
-int pattern = 0;
-bool autoChangePatterns = false;
+// int displayTime = 10;
+// int brightness = 128;
+// int gain = 10;
+// int squelch = 5;
+// int pattern = 0;
+// bool autoChangePatterns = false;
 
 uint8_t peak[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 uint8_t prevFFTValue[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
