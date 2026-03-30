@@ -472,47 +472,47 @@ void loop(void)
 bool updateVUmeter(void *)
 {
   // Update VU meter display through Input FFT
-  timer.in(20, updateVUmeter);
-  if (pattern != 5)
-    // TODO Replace FastLED
-    // FastLED.clear();
+  // timer.in(20, updateVUmeter);
+  // if (pattern != 5)
+  //   // TODO Replace FastLED
+  //   // FastLED.clear();
 
-    uint8_t divisor = 1; // If 8 bands, we need to divide things by 2
-  if (numBands == 8)
-    divisor = 2; // and average each pair of bands together
+  //   uint8_t divisor = 1; // If 8 bands, we need to divide things by 2
+  // if (numBands == 8)
+  //   divisor = 2; // and average each pair of bands together
 
-  for (int i = 0; i < 16; i += divisor)
-  {
-    uint8_t fftValue;
+  // for (int i = 0; i < 16; i += divisor)
+  // {
+  //   uint8_t fftValue;
 
-    if (numBands == 8)
-      fftValue = (fftResult[i] + fftResult[i + 1]) / 2; // Average every two bands if numBands = 8
-    else
-      fftValue = fftResult[i];
+  //   if (numBands == 8)
+  //     fftValue = (fftResult[i] + fftResult[i + 1]) / 2; // Average every two bands if numBands = 8
+  //   else
+  //     fftValue = fftResult[i];
 
-    fftValue = ((prevFFTValue[i / divisor] * 3) + fftValue) / 4; // Dirty rolling average between frames to reduce flicker
-    barHeights[i / divisor] = fftValue / (255 / M_HEIGHT);       // Scale bar height
+  //   fftValue = ((prevFFTValue[i / divisor] * 3) + fftValue) / 4; // Dirty rolling average between frames to reduce flicker
+  //   barHeights[i / divisor] = fftValue / (255 / M_HEIGHT);       // Scale bar height
 
-    if (barHeights[i / divisor] > peak[i / divisor]) // Move peak up
-      peak[i / divisor] = min(M_HEIGHT, (int)barHeights[i / divisor]);
+  //   if (barHeights[i / divisor] > peak[i / divisor]) // Move peak up
+  //     peak[i / divisor] = min(M_HEIGHT, (int)barHeights[i / divisor]);
 
-    prevFFTValue[i / divisor] = fftValue; // Save prevFFTValue for averaging later
-  }
-
+  //   prevFFTValue[i / divisor] = fftValue; // Save prevFFTValue for averaging later
+  // }
+// TODO implement draw block
   // Draw the patterns
-  for (int band = 0; band < numBands; band++)
-  {
-    drawPatterns(band);
-  }
+  // for (int band = 0; band < numBands; band++)
+  // {
+  //   drawPatterns(band);
+  // }
 
   // Decay peak
   // TODO set up timer
   // EVERY_N_MILLISECONDS(60)
-  {
-    for (uint8_t band = 0; band < numBands; band++)
-      if (peak[band] > 0)
-        peak[band] -= 1;
-  }
+  // {
+  //   for (uint8_t band = 0; band < numBands; band++)
+  //     if (peak[band] > 0)
+  //       peak[band] -= 1;
+  // }
   // TODO set up timer
   // EVERY_N_SECONDS(30)
   {
