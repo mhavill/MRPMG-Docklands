@@ -62,15 +62,9 @@
 //   }
 // }
 #include <driver/i2s.h>
-// #define I2S_WS 15
-// #define I2S_SD 13
-// #define I2S_SCK 2
 
-// #define I2S_MIC_SERIAL_CLOCK GPIO_NUM_33
-// #define I2S_MIC_LEFT_RIGHT_CLOCK GPIO_NUM_25
-// #define I2S_MIC_SERIAL_DATA GPIO_NUM_32
-#define I2S_WS 25
-#define I2S_SD 32
+#define I2S_WS 0
+#define I2S_SD 21
 #define I2S_SCK 33
 #define I2S_PORT I2S_NUM_0
 #define bufferLen 64

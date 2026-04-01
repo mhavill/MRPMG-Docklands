@@ -132,13 +132,7 @@ auto timer = timer_create_default(); // create a timer with default settings
 #define LAT 4
 #define OE 15
 
-//  * INMP441 Wiring to GPIO
-//  * VDD          3V3
-//  * GND          GND
-//  * L/R          GND
-//  * WS           D11  Updated to actual build wiring
-//  * SCK          D10
-//  * SD           D09
+
 
 #define I2S_PORT I2S_NUM_0
 #define bufferLen 64
@@ -238,7 +232,7 @@ enum MODE
 } display_mode;
 
 // select which pin will trigger the configuration portal when set to LOW
-#define TRIGGER_PIN 33
+#define TRIGGER_PIN 16
 /****************************
  * GIF Playback Variables
  ****************************/
@@ -1186,8 +1180,36 @@ void setupINMP441()
   delay(1000);
   i2s_install();
   i2s_setpin();
+  Serial.println("I2S driver installed.");
+  delay(100);
   i2s_start(I2S_PORT);
   delay(500);
+  // Test to see if we have a digital microphone installed or not.
+  float mean = 0.0;
+  int32_t samples[BLOCK_SIZE];
+  size_t num_bytes_read = 0;
+
+  esp_err_t result = i2s_read(I2S_PORT, &samples, BLOCK_SIZE, &num_bytes_read, portMAX_DELAY);
+  
+  /*int num_bytes_read = i2s_read_bytes(I2S_PORT,
+                                      (char *)samples,
+                                      BLOCK_SIZE,     // the doc says bytes, but its elements.
+                                      portMAX_DELAY); // no timeout*/
+  
+  int samples_read = num_bytes_read / 8;
+  if (samples_read > 0) {
+    for (int i = 0; i < samples_read; ++i) {
+      mean += samples[i];
+    }
+    mean = mean/BLOCK_SIZE/16384;
+    if (mean != 0.0) {
+      Serial.println("Digital microphone is present.");
+    } else {
+      Serial.println("Digital microphone is NOT present.");
+    }
+  } else {
+    Serial.println("Failed to read from I2S. Check microphone connection.");
+  }
 }
 
 void loopINMP441()
@@ -1212,9 +1234,10 @@ void loopINMP441()
 
 void i2s_install()
 {
+  esp_err_t err;
   const i2s_config_t i2s_config = {
       .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX),
-      .sample_rate = 16000,
+      .sample_rate = 10240,
       .bits_per_sample = i2s_bits_per_sample_t(16),
       .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
       .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_STAND_I2S),
@@ -1223,11 +1246,23 @@ void i2s_install()
       .dma_buf_len = 64,
       .use_apll = false};
 
-  i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
+  // i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
+  // Configuring the I2S driver and pins.
+  // This function must be called before any I2S driver read/write operations.
+  Serial.println("Installing I2S driver...");
+  delay(2000);
+  err = i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
+  if (err != ESP_OK)
+  {
+    Serial.printf("Failed installing driver: %d\n", err);
+    while (true)
+      ;
+  }
 }
 
 void i2s_setpin()
 {
+  esp_err_t err;
   const i2s_pin_config_t pin_config = {
       .bck_io_num = I2S_SCK,
       .ws_io_num = I2S_WS,
@@ -1235,6 +1270,13 @@ void i2s_setpin()
       .data_in_num = I2S_SD};
 
   i2s_set_pin(I2S_PORT, &pin_config);
+  err = i2s_set_pin(I2S_PORT, &pin_config);
+  if (err != ESP_OK)
+  {
+    Serial.printf("Failed setting pin: %d\n", err);
+    while (true)
+      ;
+  }
 }
 
 /***********************
