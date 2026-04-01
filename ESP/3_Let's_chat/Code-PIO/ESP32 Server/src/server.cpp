@@ -232,7 +232,7 @@ enum MODE
 } display_mode;
 
 // select which pin will trigger the configuration portal when set to LOW
-#define TRIGGER_PIN 16
+#define TRIGGER_PIN 2 
 /****************************
  * GIF Playback Variables
  ****************************/
@@ -242,12 +242,12 @@ File root, gifFile;
 
 // TODO Resolve following block
 // Global variables for VU meter settings
-// int displayTime = 10;
-// int brightness = 128;
-// int gain = 10;
-// int squelch = 5;
-// int pattern = 0;
-// bool autoChangePatterns = false;
+int displayTime = 10;
+int brightness = 128;
+int gain = 10;
+int squelch = 5;
+int pattern = 0;
+bool autoChangePatterns = false;
 
 uint8_t peak[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 uint8_t prevFFTValue[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
