@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="XefxOGhRjWb_k5u_QuQD" name="Page-1">
-        <mxGraphModel dx="1590" dy="575" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+        <mxGraphModel dx="2638" dy="1264" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -92,7 +92,7 @@
                 <mxCell id="32" value="Load Pixels in DMA" style="whiteSpace=wrap;html=1;rounded=1;arcSize=0;" parent="1" vertex="1">
                     <mxGeometry x="520" y="340" width="120" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="71" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="36" target="63">
+                <mxCell id="71" value="" style="edgeStyle=none;html=1;" parent="1" source="36" target="63" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="36" value="Combine foreground&amp;nbsp;&lt;div&gt;&amp;amp; background&lt;/div&gt;" style="whiteSpace=wrap;html=1;rounded=1;arcSize=0;" parent="1" vertex="1">
@@ -185,6 +185,33 @@
                 </mxCell>
                 <mxCell id="70" style="edgeStyle=none;html=1;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=0.96;entryY=0.7;entryDx=0;entryDy=0;entryPerimeter=0;startArrow=classic;startFill=1;" parent="1" source="4" target="59" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="79" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="72" target="73">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="72" value="Start" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+                    <mxGeometry x="-270" y="560" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="80" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="73" target="74">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="73" value="WiFi&amp;nbsp;&lt;div&gt;Manager&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="-110" y="560" width="120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="74" value="Menu" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="560" width="120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="75" value="Text" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="-130" y="760" width="120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="76" value="Animation" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="760" width="120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="77" value="VUmeter" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="270" y="760" width="120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="78" value="Display&lt;div&gt;Select&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="660" width="120" height="80" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

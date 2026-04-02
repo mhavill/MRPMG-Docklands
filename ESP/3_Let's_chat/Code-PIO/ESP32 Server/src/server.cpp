@@ -32,7 +32,7 @@
 #include <string>
 
 // VU Meter and Audio Reactive
-#include "audio_reactive.h"
+// #include "audio_reactive.h"
 // #include <FastLED.h>
 // #include <LEDMatrix.h>
 #include <LEDText.h>
@@ -105,8 +105,9 @@ void loopINMP441();
 #define device "ESP32server"
 const int SECOND = 1000;
 static float tempC;
+// TODO resolve deviceAddress
 // static DeviceAddress deviceAddress;
-// static bool waitForConversion = false;
+static bool waitForConversion = false;
 
 WebServer server(80);
 
@@ -132,9 +133,7 @@ auto timer = timer_create_default(); // create a timer with default settings
 #define LAT 4
 #define OE 15
 
-
-
-#define I2S_PORT I2S_NUM_0
+// #define I2S_PORT I2S_NUM_0
 #define bufferLen 64
 int16_t sBuffer[bufferLen];
 
@@ -232,7 +231,7 @@ enum MODE
 } display_mode;
 
 // select which pin will trigger the configuration portal when set to LOW
-#define TRIGGER_PIN 2 
+#define TRIGGER_PIN 36
 /****************************
  * GIF Playback Variables
  ****************************/
@@ -242,12 +241,12 @@ File root, gifFile;
 
 // TODO Resolve following block
 // Global variables for VU meter settings
-int displayTime = 10;
-int brightness = 128;
-int gain = 10;
-int squelch = 5;
-int pattern = 0;
-bool autoChangePatterns = false;
+// int displayTime = 10;
+// int brightness = 128;
+// int gain = 10;
+// int squelch = 5;
+// int pattern = 0;
+// bool autoChangePatterns = false;
 
 uint8_t peak[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 uint8_t prevFFTValue[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -279,6 +278,15 @@ CRGBPalette16 greenbluePal = greenblue_gp;
 CRGBPalette16 heatPal = redyellow_gp;
 uint8_t colorTimer = 0;
 uint8_t divisor = 1; // If 8 bands, we need to divide things by 2
+
+#define I2S_WS 0        // aka LRCL
+#define I2S_SD 21        // aka DOUT
+#define I2S_SCK 33       // aka BCLK
+#define MIN_SHOW_DELAY  15
+const i2s_port_t I2S_PORT = I2S_NUM_0;
+const int BLOCK_SIZE = 64;
+
+const int SAMPLE_RATE = 10240;
 
 /*******************************
  * Setup
@@ -336,8 +344,9 @@ void setup(void)
   timer.in(1 * SECOND, updateVUmeter);
   timer.every(3 * SECOND, wmloop);
   timer.every(10, server_client_handler);
-  timer.every(60, decayPeak);
-  timer.every(30 * SECOND, updateEEPROM);
+  // TODO set up timers for VU meter patterns and EEPROM saving
+  // timer.every(60, decayPeak);
+  // timer.every(30 * SECOND, updateEEPROM);
 
   /***********************************
    * Web Server Handlers
@@ -447,11 +456,14 @@ void setup(void)
     Serial.println("LittleFS Mount Failed");
     return;
   }
+  Serial.println("LittleFS Mounted Successfully");
 
   /*******************
-   * Initialize Audio Reactive FFT
+   * Initialize microphone
    ******************/
   setupINMP441();
+
+  Serial.println("Setup complete");
 }
 
 /*******************************
@@ -461,6 +473,7 @@ void setup(void)
 void loop(void)
 {
   timer.tick();
+  // Serial.printf("display_mode = %d \n", display_mode);
   switch (display_mode)
   {
   case MODE_TEXT:
@@ -488,37 +501,37 @@ bool updateVUmeter(void *)
 {
   // Update VU meter display through Input FFT
   // timer.in(20, updateVUmeter);
-  // if (pattern != 5)
-  //   // TODO Replace FastLED
-  //   // FastLED.clear();
+  if (pattern != 5)
+    // TODO Replace FastLED
+    // FastLED.clear();
 
-  //   uint8_t divisor = 1; // If 8 bands, we need to divide things by 2
-  // if (numBands == 8)
-  //   divisor = 2; // and average each pair of bands together
+    //   uint8_t divisor = 1; // If 8 bands, we need to divide things by 2
+    // if (numBands == 8)
+    //   divisor = 2; // and average each pair of bands together
 
-  // for (int i = 0; i < 16; i += divisor)
-  // {
-  //   uint8_t fftValue;
+    // for (int i = 0; i < 16; i += divisor)
+    // {
+    //   uint8_t fftValue;
 
-  //   if (numBands == 8)
-  //     fftValue = (fftResult[i] + fftResult[i + 1]) / 2; // Average every two bands if numBands = 8
-  //   else
-  //     fftValue = fftResult[i];
+    //   if (numBands == 8)
+    //     fftValue = (fftResult[i] + fftResult[i + 1]) / 2; // Average every two bands if numBands = 8
+    //   else
+    //     fftValue = fftResult[i];
 
-  //   fftValue = ((prevFFTValue[i / divisor] * 3) + fftValue) / 4; // Dirty rolling average between frames to reduce flicker
-  //   barHeights[i / divisor] = fftValue / (255 / M_HEIGHT);       // Scale bar height
+    //   fftValue = ((prevFFTValue[i / divisor] * 3) + fftValue) / 4; // Dirty rolling average between frames to reduce flicker
+    //   barHeights[i / divisor] = fftValue / (255 / M_HEIGHT);       // Scale bar height
 
-  //   if (barHeights[i / divisor] > peak[i / divisor]) // Move peak up
-  //     peak[i / divisor] = min(M_HEIGHT, (int)barHeights[i / divisor]);
+    //   if (barHeights[i / divisor] > peak[i / divisor]) // Move peak up
+    //     peak[i / divisor] = min(M_HEIGHT, (int)barHeights[i / divisor]);
 
-  //   prevFFTValue[i / divisor] = fftValue; // Save prevFFTValue for averaging later
-  // }
-  // TODO implement draw block
-  // Draw the patterns
-  // for (int band = 0; band < numBands; band++)
-  // {
-  //   drawPatterns(band);
-  // }
+    //   prevFFTValue[i / divisor] = fftValue; // Save prevFFTValue for averaging later
+    // }
+    // TODO implement draw block
+    // Draw the patterns
+    for (int band = 0; band < numBands; band++)
+    {
+      // drawPatterns(band);
+    }
 
   // Decay peak
   // TODO set up timer
@@ -530,22 +543,22 @@ bool updateVUmeter(void *)
   // }
   // TODO set up timer
   // EVERY_N_SECONDS(30)
-  {
-    // Save values in EEPROM. Will only be commited if values have changed.
-    EEPROM.write(EEPROM_BRIGHTNESS, brightness);
-    EEPROM.write(EEPROM_GAIN, gain);
-    EEPROM.write(EEPROM_SQUELCH, squelch);
-    EEPROM.write(EEPROM_PATTERN, pattern);
-    EEPROM.write(EEPROM_DISPLAY_TIME, displayTime);
-    EEPROM.commit();
-  }
-  // TODO set up timer
-  // EVERY_N_SECONDS_I(timingObj, displayTime)
-  {
-    // timingObj.setPeriod(displayTime);
-    if (autoChangePatterns)
-      pattern = (pattern + 1) % 6;
-  }
+  // {
+  //   // Save values in EEPROM. Will only be commited if values have changed.
+  //   EEPROM.write(EEPROM_BRIGHTNESS, brightness);
+  //   EEPROM.write(EEPROM_GAIN, gain);
+  //   EEPROM.write(EEPROM_SQUELCH, squelch);
+  //   EEPROM.write(EEPROM_PATTERN, pattern);
+  //   EEPROM.write(EEPROM_DISPLAY_TIME, displayTime);
+  //   EEPROM.commit();
+  // }
+  // // TODO set up timer
+  // // EVERY_N_SECONDS_I(timingObj, displayTime)
+  // {
+  //   // timingObj.setPeriod(displayTime);
+  //   if (autoChangePatterns)
+  //     pattern = (pattern + 1) % 6;
+  // }
   // TODO Replace FastLED
   // FastLED.setBrightness(brightness);
   // FastLED.show();
@@ -555,87 +568,87 @@ bool updateVUmeter(void *)
   return true;
 }
 
-bool decayPeak(void *)
-{
-  for (uint8_t band = 0; band < numBands; band++)
-    if (peak[band] > 0)
-      peak[band] -= 1;
-  return true;
-}
-bool updateEEPROM(void *)
-{
-  // Save values in EEPROM. Will only be commited if values have changed.
-  EEPROM.write(EEPROM_BRIGHTNESS, brightness);
-  EEPROM.write(EEPROM_GAIN, gain);
-  EEPROM.write(EEPROM_SQUELCH, squelch);
-  EEPROM.write(EEPROM_PATTERN, pattern);
-  EEPROM.write(EEPROM_DISPLAY_TIME, displayTime);
-  EEPROM.commit();
-  return true;
-}
+// bool decayPeak(void *)
+// {
+//   for (uint8_t band = 0; band < numBands; band++)
+//     if (peak[band] > 0)
+//       peak[band] -= 1;
+//   return true;
+// }
+// bool updateEEPROM(void *)
+// {
+//   // Save values in EEPROM. Will only be commited if values have changed.
+//   EEPROM.write(EEPROM_BRIGHTNESS, brightness);
+//   EEPROM.write(EEPROM_GAIN, gain);
+//   EEPROM.write(EEPROM_SQUELCH, squelch);
+//   EEPROM.write(EEPROM_PATTERN, pattern);
+//   EEPROM.write(EEPROM_DISPLAY_TIME, displayTime);
+//   EEPROM.commit();
+//   return true;
+// }
 
 // Handle VU meter page GET request
 void handleVUMeter()
 {
-  String html = FPSTR(vumeter_page_html); // Your VU meter HTML
+  //   String html = FPSTR(vumeter_page_html); // Your VU meter HTML
 
-  // Replace placeholders
-  html.replace("%DISPLAYTIME%", String(displayTime));
-  html.replace("%BRIGHTNESSVALUE%", String(brightness));
-  html.replace("%GAINVALUE%", String(gain));
-  html.replace("%SQUELCHVALUE%", String(squelch));
+  //   // Replace placeholders
+  //   html.replace("%DISPLAYTIME%", String(displayTime));
+  //   html.replace("%BRIGHTNESSVALUE%", String(brightness));
+  //   html.replace("%GAINVALUE%", String(gain));
+  //   html.replace("%SQUELCHVALUE%", String(squelch));
 
-  server.send(200, "text/html", html);
+  //   server.send(200, "text/html", html);
 }
 
 // Handle VU meter control updates
 void handleVUMeterUpdate()
 {
-  if (server.hasArg("cmd"))
-  {
-    String cmd = server.arg("cmd");
-    char dataType = cmd.charAt(0);
-    String dataValue = cmd.substring(1);
+  //   if (server.hasArg("cmd"))
+  //   {
+  //     String cmd = server.arg("cmd");
+  //     char dataType = cmd.charAt(0);
+  //     String dataValue = cmd.substring(1);
 
-    switch (dataType)
-    {
-    case 't':
-      displayTime = dataValue.toInt();
-      Serial.printf("Display time: %d\n", displayTime);
-      break;
-    case 'b':
-      brightness = dataValue.toInt();
-      Serial.printf("Brightness: %d\n", brightness);
-      break;
-    case 'g':
-      gain = dataValue.toInt();
-      Serial.printf("Gain: %d\n", gain);
-      break;
-    case 's':
-      squelch = dataValue.toInt();
-      Serial.printf("Squelch: %d\n", squelch);
-      break;
-    case 'n':
-      pattern = (pattern + 1) % 6;
-      Serial.printf("Pattern: %d\n", pattern);
-      break;
-    case 'a':
-      autoChangePatterns = !autoChangePatterns;
-      Serial.printf("Auto patterns: %d\n", autoChangePatterns);
-      break;
-    }
-  }
+  //     switch (dataType)
+  //     {
+  //     case 't':
+  //       displayTime = dataValue.toInt();
+  //       Serial.printf("Display time: %d\n", displayTime);
+  //       break;
+  //     case 'b':
+  //       brightness = dataValue.toInt();
+  //       Serial.printf("Brightness: %d\n", brightness);
+  //       break;
+  //     case 'g':
+  //       gain = dataValue.toInt();
+  //       Serial.printf("Gain: %d\n", gain);
+  //       break;
+  //     case 's':
+  //       squelch = dataValue.toInt();
+  //       Serial.printf("Squelch: %d\n", squelch);
+  //       break;
+  //     case 'n':
+  //       pattern = (pattern + 1) % 6;
+  //       Serial.printf("Pattern: %d\n", pattern);
+  //       break;
+  //     case 'a':
+  //       autoChangePatterns = !autoChangePatterns;
+  //       Serial.printf("Auto patterns: %d\n", autoChangePatterns);
+  //       break;
+  //     }
+  //   }
 
-  // Send back current state as JSON
-  String response = "{";
-  response += "\"displayTime\":" + String(displayTime) + ",";
-  response += "\"brightness\":" + String(brightness) + ",";
-  response += "\"gain\":" + String(gain) + ",";
-  response += "\"squelch\":" + String(squelch) + ",";
-  response += "\"auto\":" + String(autoChangePatterns ? "true" : "false");
-  response += "}";
+  //   // Send back current state as JSON
+  //   String response = "{";
+  //   response += "\"displayTime\":" + String(displayTime) + ",";
+  //   response += "\"brightness\":" + String(brightness) + ",";
+  //   response += "\"gain\":" + String(gain) + ",";
+  //   response += "\"squelch\":" + String(squelch) + ",";
+  //   response += "\"auto\":" + String(autoChangePatterns ? "true" : "false");
+  //   response += "}";
 
-  server.send(200, "application/json", response);
+  //   server.send(200, "application/json", response);
 }
 
 bool display_animations(void *)
@@ -681,13 +694,14 @@ bool server_client_handler(void *)
 bool wmloop(void *)
 {
   // is configuration portal requested?
+  // Serial.printf("Checking WiFiManager trigger pin (GPIO%d) state..%d\n", TRIGGER_PIN, digitalRead(TRIGGER_PIN));
   if (digitalRead(TRIGGER_PIN) == LOW)
   {
-    WiFiManager wm;
 
+    WiFiManager wm;
+    wm.setConfigPortalTimeout(10);
     // reset settings - for testing
     wm.resetSettings();
-
     ESP.restart();
   }
   return true;
@@ -1190,24 +1204,31 @@ void setupINMP441()
   size_t num_bytes_read = 0;
 
   esp_err_t result = i2s_read(I2S_PORT, &samples, BLOCK_SIZE, &num_bytes_read, portMAX_DELAY);
-  
+
   /*int num_bytes_read = i2s_read_bytes(I2S_PORT,
                                       (char *)samples,
                                       BLOCK_SIZE,     // the doc says bytes, but its elements.
                                       portMAX_DELAY); // no timeout*/
-  
+
   int samples_read = num_bytes_read / 8;
-  if (samples_read > 0) {
-    for (int i = 0; i < samples_read; ++i) {
+  if (samples_read > 0)
+  {
+    for (int i = 0; i < samples_read; ++i)
+    {
       mean += samples[i];
     }
-    mean = mean/BLOCK_SIZE/16384;
-    if (mean != 0.0) {
+    mean = mean / BLOCK_SIZE / 16384;
+    if (mean != 0.0)
+    {
       Serial.println("Digital microphone is present.");
-    } else {
+    }
+    else
+    {
       Serial.println("Digital microphone is NOT present.");
     }
-  } else {
+  }
+  else
+  {
     Serial.println("Failed to read from I2S. Check microphone connection.");
   }
 }
