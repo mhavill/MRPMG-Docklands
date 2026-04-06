@@ -57,8 +57,10 @@ void loop();
 void handleVUMeter();
 void handleVUMeterUpdate();
 String urlDecode(String input);
-void MainPage();
+// void MainPage();
 void MainPageSubmit();
+void handleTextMessagePage();
+String textMessageProcessor(const String &var);
 void LEDControl();
 void layer_draw_callback(int16_t x, int16_t y, uint8_t r_data, uint8_t g_data, uint8_t b_data);
 uint16_t colorWheel(uint8_t pos);
@@ -71,8 +73,8 @@ bool display_animations(void *);
 bool updateVUmeter(void *);
 bool wmloop(void *);
 bool server_client_handler(void *);
-bool decayPeak(void *);
-bool updateEEPROM(void *);
+// bool decayPeak(void *);
+// bool updateEEPROM(void *);
 
 void GIFDraw(GIFDRAW *pDraw);
 void *GIFOpenFile(const char *fname, int32_t *pSize);
@@ -279,10 +281,10 @@ CRGBPalette16 heatPal = redyellow_gp;
 uint8_t colorTimer = 0;
 uint8_t divisor = 1; // If 8 bands, we need to divide things by 2
 
-#define I2S_WS 0        // aka LRCL
-#define I2S_SD 21        // aka DOUT
-#define I2S_SCK 33       // aka BCLK
-#define MIN_SHOW_DELAY  15
+#define I2S_WS 0   // aka LRCL
+#define I2S_SD 21  // aka DOUT
+#define I2S_SCK 33 // aka BCLK
+#define MIN_SHOW_DELAY 15
 const i2s_port_t I2S_PORT = I2S_NUM_0;
 const int BLOCK_SIZE = 64;
 
@@ -364,7 +366,8 @@ void setup(void)
   if (mode == "text") 
   {
     display_mode = MODE_TEXT;
-    server.send(200, "text/html", text_message_page_html);
+    handleTextMessagePage();
+    // server.send(200, "text/html", text_message_page_html);
     Serial.println("Served Text Message Page");
   } 
   else if (mode == "animations") 
@@ -497,6 +500,48 @@ void loop(void)
 /*******************************
  * Utility Functions
  *******************************/
+
+// When serving the text message page, process placeholders
+void handleTextMessagePage()
+{
+  String html = FPSTR(text_message_page_html); // Your text message HTML
+
+  // Replace placeholders
+  html.replace("%TOPTEXT%", String(top_msg.c_str()));
+  html.replace("%UPPERTEXT%", String(upper_msg.c_str()));
+  html.replace("%LOWERTEXT%", String(lower_msg.c_str()));
+  html.replace("%SPEED%", String(speed));
+  html.replace("%BACKGROUND%", String(background));
+
+  server.send(200, "text/html", html);
+}
+
+// Processor function to replace placeholders
+String textMessageProcessor(const String &var)
+{
+  if (var == "TOPTEXT")
+  {
+    return String(top_msg.c_str());
+  }
+  if (var == "UPPERTEXT")
+  {
+    return String(upper_msg.c_str());
+  }
+  if (var == "LOWERTEXT")
+  {
+    return String(lower_msg.c_str());
+  }
+  if (var == "SPEED")
+  {
+    return String(speed);
+  }
+  if (var == "BACKGROUND")
+  {
+    return String(background);
+  }
+  return String();
+}
+
 bool updateVUmeter(void *)
 {
   // Update VU meter display through Input FFT
@@ -814,7 +859,7 @@ void MainPageSubmit()
   String lowerText = server.arg("lowerText");
   String topText = server.arg("topText");
 
-  speed = server.arg("speed").toInt() * 10;
+  speed = server.arg("speed").toInt();
   background = server.arg("background").toInt();
 
   // Decode the URL-encoded strings
@@ -835,7 +880,8 @@ void MainPageSubmit()
   Serial.print("Received background: ");
   Serial.println(background);
 
-  server.send(200, "text/plain", "Messages received!");
+  // server.send(200, "text/plain", "Messages received!");
+  handleTextMessagePage(); // Refresh the page with new messages
 
   // Clear first, then assign with explicit std::string construction
   upper_msg.clear();

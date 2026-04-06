@@ -157,31 +157,31 @@ const char text_message_page_html[] PROGMEM = R"rawString(
         <form action="http://ESP32server.local/submit" method="POST" accept-charset="ISO-8859-1">
             <div class="form-group">
                 <label for="topText">Top Text Message</label>
-                <input type="text" id="topText" name="topText" maxlength="11" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <input type="text" id="topText" name="topText" maxlength="11" value="%TOPTEXT%" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 <div class="char-count"><span id="topCount">0</span>/11</div>
             </div>
             
             <div class="form-group">
                 <label for="upperText">Upper Text Message</label>
-                <input type="text" id="upperText" name="upperText" maxlength="100" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <input type="text" id="upperText" name="upperText" maxlength="100" value="%UPPERTEXT%" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 <div class="char-count"><span id="upperCount">0</span>/100</div>
             </div>
             
             <div class="form-group">
                 <label for="lowerText">Lower Text Message</label>
-                <input type="text" id="lowerText" name="lowerText" maxlength="11" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <input type="text" id="lowerText" name="lowerText" maxlength="11" value="%LOWERTEXT%" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 <div class="char-count"><span id="lowerCount">0</span>/11</div>
             </div>
             
             <div class="number-inputs">
                 <div class="form-group">
                     <label for="speed">Speed</label>
-                    <input type="number" id="speed" name="speed" min="1" max="100" required>
+                    <input type="number" id="speed" name="speed" min="1" max="100" value="%SPEED%" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="background">Background</label>
-                    <input type="number" id="background" name="background" min="1" max="100" required>
+                    <input type="number" id="background" name="background" min="1" max="100" value="%BACKGROUND%" required>
                 </div>
             </div>
             
@@ -215,6 +215,11 @@ const char text_message_page_html[] PROGMEM = R"rawString(
         const topCount = document.getElementById('topCount');
         const upperCount = document.getElementById('upperCount');
         const lowerCount = document.getElementById('lowerCount');
+        
+        // Set initial character counts from pre-populated values
+        topCount.textContent = topInput.value.length;
+        upperCount.textContent = upperInput.value.length;
+        lowerCount.textContent = lowerInput.value.length;
         
         topInput.addEventListener('input', function() {
             topCount.textContent = this.value.length;
